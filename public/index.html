@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>iTECify IDE</title>
+    <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.min.js"></script>
+    <script src="https://unpkg.com/y-monaco@0.1.0/dist/y-monaco.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "monaco-editor": "https://unpkg.com/monaco-editor@0.45.0/esm/vs/editor/editor.api.js"
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/yjs@13.6.8/dist/yjs.js"></script>
+    <script src="https://unpkg.com/y-websocket@1.5.0/dist/y-websocket.js"></script>
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
@@ -76,38 +87,7 @@
       .tab { padding: 8px 12px; font-size: 12px; border-right: 1px solid #2a2a2a; background: #1e1e1e; color: #fff; }
 
       .editorWrap { position: relative; flex: 1; min-height: 0; }
-      textarea {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        border: 0;
-        outline: 0;
-        resize: none;
-        padding: 14px;
-        font-family: Consolas, Monaco, monospace;
-        font-size: 13px;
-        line-height: 1.5;
-        white-space: pre;
-        overflow: auto;
-      }
-
-      .cursorLayer { position: absolute; inset: 0; pointer-events: none; }
-      .remoteCursor { position: absolute; width: 2px; height: 20px; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); }
-      .remoteLabel {
-        position: absolute;
-        transform: translateY(-16px);
-        font-size: 11px;
-        background: rgba(0,0,0,0.55);
-        border: 1px solid rgba(255,255,255,0.12);
-        padding: 1px 6px;
-        border-radius: 999px;
-        color: #fff;
-        white-space: nowrap;
-        pointer-events: none;
-      }
+      #editor { height: 100%; }
 
       .blocksPanel { border-top: 1px solid #2a2a2a; background: #202020; padding: 10px; max-height: 220px; overflow: auto; }
       .blocksTitle { font-size: 12px; color: #9d9d9d; margin-bottom: 8px; }
@@ -166,8 +146,7 @@
       <section class="editor">
         <div class="tabbar"><div class="tab" id="activeTab">—</div></div>
         <div class="editorWrap">
-          <textarea id="codeEditor" spellcheck="false" wrap="off"></textarea>
-          <div class="cursorLayer" id="cursorLayer"></div>
+          <div id="editor"></div>
         </div>
 
         <div class="blocksPanel">
@@ -212,11 +191,14 @@
     </div>
 
     <script type="module">
-      import * as Y from "https://unpkg.com/yjs?module";
-      import { WebsocketProvider } from "https://unpkg.com/y-websocket?module";
+      import * as monaco from 'monaco-editor';
 
-      const editorEl = document.getElementById("codeEditor");
-      const cursorLayerEl = document.getElementById("cursorLayer");
+      const Y = window.Y;
+      const { WebsocketProvider } = window;
+
+      const MonacoBinding = window.MonacoBinding;
+
+      const editorContainer = document.getElementById("editor");
       const filesEl = document.getElementById("files");
       const blocksEl = document.getElementById("blocks");
       const activeTabEl = document.getElementById("activeTab");
@@ -246,15 +228,50 @@
         csharp: 'using System;\nclass Program {\n  static void Main() {\n    Console.WriteLine("csharp: hello");\n  }\n}\n',
       };
 
+      let activeId = "nodejs";
+      let controller = null;
+      let editor;
+      let models = {};
+      let binding;
+
+      // Wait for Monaco
+      await new Promise((resolve) => {
+        if (window.monaco) {
+          resolve();
+        } else {
+          require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
+          require(['vs/editor/editor.main'], () => {
+            window.monaco = monaco;
+            resolve();
+          });
+        }
+      });
+
+      // Create models
+      for (const f of FILES) {
+        models[f.id] = monaco.editor.createModel(SNIPPETS[f.id], f.language);
+      }
+
+      // Create editor
+      editor = monaco.editor.create(editorContainer, {
+        model: models[activeId],
+        theme: 'vs-dark',
+        fontSize: 13,
+        lineHeight: 21,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        wordWrap: 'off',
+        renderWhitespace: 'selection',
+        bracketMatching: 'always',
+      });
+
       const room = new URLSearchParams(location.search).get("room") || "default-room";
       const wsHost = location.hostname || "localhost";
       const providerUrl = `ws://${wsHost}:1234`;
 
       const myName = "user-" + Math.floor(Math.random() * 10000);
       const myColor = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
-
-      let activeId = "nodejs";
-      let controller = null;
 
       const doc = new Y.Doc();
       const provider = new WebsocketProvider(providerUrl, room, doc);
@@ -271,6 +288,19 @@
           if (t.length === 0) t.insert(0, SNIPPETS[f.id] || "");
         }
       }
+
+      // Binding
+      binding = new MonacoBinding(ytexts.get(activeId), models[activeId], new Set([editor]), awareness);
+
+      // Cursor tracking
+      editor.onDidChangeCursorPosition(() => {
+        const position = editor.getPosition();
+        const x = position.column * 8.4;
+        const y = position.lineNumber * 21;
+        awareness.setLocalStateField("cursor", { position: { x, y }, file: activeId });
+        awareness.setLocalStateField("activeFile", activeId);
+        awareness.setLocalStateField("user", { name: myName, color: myColor });
+      });
 
       function blockHeader(id, lang, status) {
         return `//__AI_BLOCK_START__:${id}:${lang}:${status}`;
@@ -291,10 +321,11 @@
         btn.textContent = f.name;
         btn.onclick = () => {
           activeId = f.id;
-          editorEl.value = ytexts.get(activeId).toString();
+          editor.setModel(models[activeId]);
+          binding.destroy();
+          binding = new MonacoBinding(ytexts.get(activeId), models[activeId], new Set([editor]), awareness);
           activeTabEl.textContent = f.name;
           renderBlocks();
-          renderRemoteCursors();
           renderExplorer();
         };
         filesEl.appendChild(btn);
@@ -310,113 +341,6 @@
       activeTabEl.textContent = FILES.find((x) => x.id === activeId).name;
       editorEl.value = ytexts.get(activeId).toString();
       renderBlocks();
-
-      // Awareness (multi-cursor)
-      function getCursorState() {
-        return { anchor: editorEl.selectionStart, head: editorEl.selectionEnd };
-      }
-
-      awareness.setLocalStateField("user", { name: myName, color: myColor });
-
-      function updateLocalCursor() {
-        const st = getCursorState();
-        awareness.setLocalStateField("cursor", { fileId: activeId, ...st, color: myColor, name: myName });
-      }
-
-      editorEl.addEventListener("keyup", updateLocalCursor);
-      editorEl.addEventListener("click", updateLocalCursor);
-      editorEl.addEventListener("select", updateLocalCursor);
-      document.addEventListener("selectionchange", () => {
-        if (document.activeElement === editorEl) updateLocalCursor();
-      });
-      updateLocalCursor();
-
-      // Editor <-> Y.Text binding (MVP: replace entire document on local input)
-      let applyingRemote = false;
-      editorEl.addEventListener("input", () => {
-        if (applyingRemote) return;
-        const t = ytexts.get(activeId);
-        t.doc.transact(() => {
-          t.delete(0, t.length);
-          t.insert(0, editorEl.value);
-        });
-        renderBlocks();
-        updateLocalCursor();
-      });
-
-      for (const [fileId, t] of ytexts.entries()) {
-        t.observe(() => {
-          if (fileId !== activeId) return;
-          if (applyingRemote) return;
-          applyingRemote = true;
-          editorEl.value = t.toString();
-          applyingRemote = false;
-          renderBlocks();
-          renderRemoteCursors();
-        });
-      }
-
-      // Cursor overlay rendering (approx monospace geometry)
-      let geometry = null;
-      function measureGeometry() {
-        if (geometry) return geometry;
-        const style = getComputedStyle(editorEl);
-        const paddingLeft = parseFloat(style.paddingLeft) || 0;
-        const paddingTop = parseFloat(style.paddingTop) || 0;
-        const font = style.font;
-        const fontSize = parseFloat(style.fontSize) || 13;
-        const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.5;
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        ctx.font = font;
-        const charWidth = ctx.measureText("M").width || 8;
-        geometry = { paddingLeft, paddingTop, lineHeight, charWidth };
-        return geometry;
-      }
-
-      function caretToRowCol(text, pos) {
-        const before = text.slice(0, pos);
-        const lines = before.split("\n");
-        return { row: Math.max(0, lines.length - 1), col: lines[lines.length - 1].length };
-      }
-
-      function renderRemoteCursors() {
-        cursorLayerEl.innerHTML = "";
-        const geo = measureGeometry();
-        const text = editorEl.value;
-        const scrollLeft = editorEl.scrollLeft;
-        const scrollTop = editorEl.scrollTop;
-
-        const states = awareness.getStates();
-        for (const [clientId, st] of states.entries()) {
-          if (clientId === doc.clientID) continue;
-          const cur = st.cursor;
-          if (!cur || cur.fileId !== activeId) continue;
-          const pos = typeof cur.head === "number" ? cur.head : cur.anchor;
-          const { row, col } = caretToRowCol(text, pos);
-
-          const left = geo.paddingLeft + col * geo.charWidth - scrollLeft;
-          const top = geo.paddingTop + row * geo.lineHeight - scrollTop;
-
-          const cursor = document.createElement("div");
-          cursor.className = "remoteCursor";
-          cursor.style.left = left + "px";
-          cursor.style.top = top + "px";
-          cursor.style.background = cur.color || "#fff";
-
-          const label = document.createElement("div");
-          label.className = "remoteLabel";
-          label.style.left = left + "px";
-          label.style.top = top + "px";
-          label.style.borderColor = "rgba(255,255,255,0.18)";
-          label.textContent = cur.name || "peer";
-
-          cursorLayerEl.appendChild(cursor);
-          cursorLayerEl.appendChild(label);
-        }
-      }
-
-      awareness.on("change", renderRemoteCursors);
 
       // ----------------------------
       // Block markers + editable panel
@@ -473,7 +397,7 @@
       }
 
       function renderBlocks() {
-        const code = editorEl.value;
+        const code = models[activeId].getValue();
         const blocks = parseBlocks(code);
         blocksEl.innerHTML = "";
 
@@ -543,9 +467,10 @@
       }
 
       function insertBlockForActiveFile() {
-        const code = editorEl.value;
-        const start = editorEl.selectionStart;
-        const end = editorEl.selectionEnd;
+        const code = models[activeId].getValue();
+        const selection = editor.getSelection();
+        const start = models[activeId].getOffsetAt(selection.getStartPosition());
+        const end = models[activeId].getOffsetAt(selection.getEndPosition());
         if (start === end) {
           appendOut("\n[insertBlock] Select some text first.\n");
           return;
@@ -679,8 +604,6 @@
       document.getElementById("runChain").onclick = runChain;
       stopBtn.onclick = () => controller && controller.abort();
       document.getElementById("clearTerminal").onclick = () => { outEl.textContent = ""; };
-
-      renderRemoteCursors();
     </script>
   </body>
 </html>
