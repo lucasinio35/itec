@@ -1,0 +1,1634 @@
+<!doctype html>
+<html><body>test</body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iTECify IDE</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: Segoe UI, Roboto, Arial, sans-serif; background: #1e1e1e; color: #cccccc; }
+
+      .app {
+        height: 100vh;
+        display: grid;
+        grid-template-columns: 48px 260px 1fr;
+        grid-template-rows: 34px 1fr 240px;
+        grid-template-areas:
+          "title title title"
+          "activity sidebar editor"
+          "activity sidebar terminal";
+      }
+
+      .titlebar {
+        grid-area: title;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        background: #323233;
+        border-bottom: 1px solid #2a2a2a;
+        color: #e6e6e6;
+        font-size: 12px;
+      }
+
+      .activity {
+        grid-area: activity;
+        background: #333333;
+        border-right: 1px solid #2a2a2a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding-top: 8px;
+      }
+      .activity .dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        border: 1px solid #4a4a4a;
+        background: #2a2a2a;
+      }
+
+      .sidebar {
+        grid-area: sidebar;
+        background: #252526;
+        border-right: 1px solid #2a2a2a;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #9d9d9d; padding: 10px 12px; }
+      .file {
+        width: 100%;
+        border: 0;
+        text-align: left;
+        background: transparent;
+        color: #cccccc;
+        padding: 7px 12px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .file.active { background: #37373d; }
+
+      .editor { grid-area: editor; display: flex; flex-direction: column; min-width: 0; background: #1e1e1e; }
+      .tabbar { height: 36px; background: #2d2d2d; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; }
+      .tab { padding: 8px 12px; font-size: 12px; border-right: 1px solid #2a2a2a; background: #1e1e1e; color: #fff; }
+
+      .editorWrap { position: relative; flex: 1; min-height: 0; }
+      textarea {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border: 0;
+        outline: 0;
+        resize: none;
+        padding: 14px;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre;
+        overflow: auto;
+      }
+
+      .cursorLayer { position: absolute; inset: 0; pointer-events: none; }
+      .remoteCursor { position: absolute; width: 2px; height: 20px; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); }
+      .remoteLabel {
+        position: absolute;
+        transform: translateY(-16px);
+        font-size: 11px;
+        background: rgba(0,0,0,0.55);
+        border: 1px solid rgba(255,255,255,0.12);
+        padding: 1px 6px;
+        border-radius: 999px;
+        color: #fff;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      .blocksPanel { border-top: 1px solid #2a2a2a; background: #202020; padding: 10px; max-height: 220px; overflow: auto; }
+      .blocksTitle { font-size: 12px; color: #9d9d9d; margin-bottom: 8px; }
+      .blockCard { border: 1px solid #2a2a2a; background: #1a1a1a; border-radius: 8px; padding: 8px; margin-bottom: 10px; }
+      .blockHead { display: flex; align-items: center; gap: 8px; }
+      .blockHead .meta { font-size: 12px; color: #ddd; }
+      .blockHead select { padding: 4px 6px; font-size: 12px; }
+      .blockHead button { padding: 4px 8px; font-size: 12px; cursor: pointer; }
+      .blockContent {
+        margin-top: 8px;
+        width: 100%;
+        min-height: 90px;
+        background: #141414;
+        color: #d4d4d4;
+        border: 1px solid #2a2a2a;
+        border-radius: 6px;
+        padding: 8px;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .terminal { grid-area: terminal; display: flex; flex-direction: column; border-top: 1px solid #2a2a2a; background: #181818; }
+      .term-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-bottom: 1px solid #2a2a2a;
+        background: #1f1f1f;
+      }
+      .status { margin-left: auto; font-size: 12px; color: #9d9d9d; }
+      button, select { background: #2f2f2f; color: #dddddd; border: 1px solid #4a4a4a; border-radius: 4px; padding: 5px 8px; font-size: 12px; }
+      .checks { display: flex; gap: 8px; flex-wrap: wrap; }
+      .checks label { font-size: 12px; color: #c8c8c8; }
+
+      #terminalOut { flex: 1; margin: 0; padding: 10px; overflow: auto; white-space: pre-wrap; font-family: Consolas, Monaco, monospace; font-size: 12px; color: #d4d4d4; }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <div class="titlebar">iTECify IDE</div>
+
+      <aside class="activity">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </aside>
+
+      <aside class="sidebar">
+        <div class="section-title">Explorer</div>
+        <div id="files"></div>
+      </aside>
+
+      <section class="editor">
+        <div class="tabbar"><div class="tab" id="activeTab">—</div></div>
+        <div class="editorWrap">
+          <textarea id="codeEditor" spellcheck="false" wrap="off"></textarea>
+          <div class="cursorLayer" id="cursorLayer"></div>
+        </div>
+
+        <div class="blocksPanel">
+          <div class="blocksTitle">AI Blocks (editable, accept/reject)</div>
+          <div id="blocks"></div>
+        </div>
+      </section>
+
+      <section class="terminal">
+        <div class="term-head">
+          <strong style="font-size: 12px;">TERMINAL</strong>
+          <button id="runChain">Run Selected</button>
+          <button id="stopBtn" disabled>Stop</button>
+          <button id="clearTerminal">Clear</button>
+          <select id="timeoutMs">
+            <option value="30000">30s</option>
+            <option value="10000">10s</option>
+            <option value="60000">60s</option>
+          </select>
+          <select id="memoryBytes">
+            <option value="134217728">128MB</option>
+            <option value="268435456">256MB</option>
+            <option value="67108864">64MB</option>
+          </select>
+          <select id="nanoCpus">
+            <option value="1000000000">1 CPU</option>
+            <option value="500000000">0.5 CPU</option>
+            <option value="2000000000">2 CPU</option>
+          </select>
+          <div class="checks">
+            <label><input type="checkbox" data-lang="nodejs" checked />js</label>
+            <label><input type="checkbox" data-lang="python" checked />py</label>
+            <label><input type="checkbox" data-lang="rust" checked />rs</label>
+            <label><input type="checkbox" data-lang="c" checked />c</label>
+            <label><input type="checkbox" data-lang="cpp" checked />cpp</label>
+            <label><input type="checkbox" data-lang="csharp" checked />c#</label>
+          </div>
+          <span class="status" id="status">idle</span>
+        </div>
+        <pre id="terminalOut"></pre>
+      </section>
+    </div>
+
+    <script type="module">
+      import * as Y from "https://unpkg.com/yjs?module";
+      import { WebsocketProvider } from "https://unpkg.com/y-websocket?module";
+
+      const editorEl = document.getElementById("codeEditor");
+      const cursorLayerEl = document.getElementById("cursorLayer");
+      const filesEl = document.getElementById("files");
+      const blocksEl = document.getElementById("blocks");
+      const activeTabEl = document.getElementById("activeTab");
+
+      const outEl = document.getElementById("terminalOut");
+      const statusEl = document.getElementById("status");
+      const stopBtn = document.getElementById("stopBtn");
+
+      function setStatus(v) { statusEl.textContent = v; }
+      function appendOut(text) { outEl.textContent += text; outEl.scrollTop = outEl.scrollHeight; }
+
+      const FILES = [
+        { id: "nodejs", name: "main.js", language: "nodejs" },
+        { id: "python", name: "main.py", language: "python" },
+        { id: "rust", name: "main.rs", language: "rust" },
+        { id: "c", name: "main.c", language: "c" },
+        { id: "cpp", name: "main.cpp", language: "cpp" },
+        { id: "csharp", name: "main.cs", language: "csharp" },
+      ];
+
+      const SNIPPETS = {
+        nodejs: 'console.log("nodejs: hello");\n',
+        python: 'print("python: hello")\n',
+        rust: 'fn main() {\n    println!("rust: hello");\n}\n',
+        c: '#include <stdio.h>\nint main(void){\n  printf("c: hello\\n");\n  return 0;\n}\n',
+        cpp: '#include <iostream>\nint main(){\n  std::cout << "cpp: hello\\n";\n  return 0;\n}\n',
+        csharp: 'using System;\nclass Program {\n  static void Main() {\n    Console.WriteLine("csharp: hello");\n  }\n}\n',
+      };
+
+      const room = new URLSearchParams(location.search).get("room") || "default-room";
+      const wsHost = location.hostname || "localhost";
+      const providerUrl = `ws://${wsHost}:1234`;
+
+      const myName = "user-" + Math.floor(Math.random() * 10000);
+      const myColor = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
+
+      let activeId = "nodejs";
+      let controller = null;
+
+      const doc = new Y.Doc();
+      const provider = new WebsocketProvider(providerUrl, room, doc);
+      const awareness = provider.awareness;
+
+      const ytexts = new Map();
+      for (const f of FILES) ytexts.set(f.id, doc.getText(f.id));
+
+      const initMap = doc.getMap("init");
+      if (!initMap.get("seeded")) {
+        initMap.set("seeded", true);
+        for (const f of FILES) {
+          const t = ytexts.get(f.id);
+          if (t.length === 0) t.insert(0, SNIPPETS[f.id] || "");
+        }
+      }
+
+      function blockHeader(id, lang, status) {
+        return `//__AI_BLOCK_START__:${id}:${lang}:${status}`;
+      }
+
+      function updateEditorCode(newCode) {
+        const t = ytexts.get(activeId);
+        t.doc.transact(() => {
+          t.delete(0, t.length);
+          t.insert(0, newCode);
+        });
+      }
+
+      // Explorer UI
+      for (const f of FILES) {
+        const btn = document.createElement("button");
+        btn.className = "file" + (f.id === activeId ? " active" : "");
+        btn.textContent = f.name;
+        btn.onclick = () => {
+          activeId = f.id;
+          editorEl.value = ytexts.get(activeId).toString();
+          activeTabEl.textContent = f.name;
+          renderBlocks();
+          renderRemoteCursors();
+          renderExplorer();
+        };
+        filesEl.appendChild(btn);
+      }
+
+      function renderExplorer() {
+        for (const btn of Array.from(filesEl.querySelectorAll("button.file"))) {
+          const id = FILES.find((x) => x.name === btn.textContent)?.id;
+          btn.classList.toggle("active", id === activeId);
+        }
+      }
+
+      activeTabEl.textContent = FILES.find((x) => x.id === activeId).name;
+      editorEl.value = ytexts.get(activeId).toString();
+      renderBlocks();
+
+      // Awareness (multi-cursor)
+      function getCursorState() {
+        return { anchor: editorEl.selectionStart, head: editorEl.selectionEnd };
+      }
+
+      awareness.setLocalStateField("user", { name: myName, color: myColor });
+
+      function updateLocalCursor() {
+        const st = getCursorState();
+        awareness.setLocalStateField("cursor", { fileId: activeId, ...st, color: myColor, name: myName });
+      }
+
+      editorEl.addEventListener("keyup", updateLocalCursor);
+      editorEl.addEventListener("click", updateLocalCursor);
+      editorEl.addEventListener("select", updateLocalCursor);
+      document.addEventListener("selectionchange", () => {
+        if (document.activeElement === editorEl) updateLocalCursor();
+      });
+      updateLocalCursor();
+
+      // Editor <-> Y.Text binding (MVP: replace entire document on local input)
+      let applyingRemote = false;
+      editorEl.addEventListener("input", () => {
+        if (applyingRemote) return;
+        const t = ytexts.get(activeId);
+        t.doc.transact(() => {
+          t.delete(0, t.length);
+          t.insert(0, editorEl.value);
+        });
+        renderBlocks();
+        updateLocalCursor();
+      });
+
+      for (const [fileId, t] of ytexts.entries()) {
+        t.observe(() => {
+          if (fileId !== activeId) return;
+          if (applyingRemote) return;
+          applyingRemote = true;
+          editorEl.value = t.toString();
+          applyingRemote = false;
+          renderBlocks();
+          renderRemoteCursors();
+        });
+      }
+
+      // Cursor overlay rendering (approx monospace geometry)
+      let geometry = null;
+      function measureGeometry() {
+        if (geometry) return geometry;
+        const style = getComputedStyle(editorEl);
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingTop = parseFloat(style.paddingTop) || 0;
+        const font = style.font;
+        const fontSize = parseFloat(style.fontSize) || 13;
+        const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.5;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.font = font;
+        const charWidth = ctx.measureText("M").width || 8;
+        geometry = { paddingLeft, paddingTop, lineHeight, charWidth };
+        return geometry;
+      }
+
+      function caretToRowCol(text, pos) {
+        const before = text.slice(0, pos);
+        const lines = before.split("\n");
+        return { row: Math.max(0, lines.length - 1), col: lines[lines.length - 1].length };
+      }
+
+      function renderRemoteCursors() {
+        cursorLayerEl.innerHTML = "";
+        const geo = measureGeometry();
+        const text = editorEl.value;
+        const scrollLeft = editorEl.scrollLeft;
+        const scrollTop = editorEl.scrollTop;
+
+        const states = awareness.getStates();
+        for (const [clientId, st] of states.entries()) {
+          if (clientId === doc.clientID) continue;
+          const cur = st.cursor;
+          if (!cur || cur.fileId !== activeId) continue;
+          const pos = typeof cur.head === "number" ? cur.head : cur.anchor;
+          const { row, col } = caretToRowCol(text, pos);
+
+          const left = geo.paddingLeft + col * geo.charWidth - scrollLeft;
+          const top = geo.paddingTop + row * geo.lineHeight - scrollTop;
+
+          const cursor = document.createElement("div");
+          cursor.className = "remoteCursor";
+          cursor.style.left = left + "px";
+          cursor.style.top = top + "px";
+          cursor.style.background = cur.color || "#fff";
+
+          const label = document.createElement("div");
+          label.className = "remoteLabel";
+          label.style.left = left + "px";
+          label.style.top = top + "px";
+          label.style.borderColor = "rgba(255,255,255,0.18)";
+          label.textContent = cur.name || "peer";
+
+          cursorLayerEl.appendChild(cursor);
+          cursorLayerEl.appendChild(label);
+        }
+      }
+
+      awareness.on("change", renderRemoteCursors);
+
+      // ----------------------------
+      // Block markers + editable panel
+      // ----------------------------
+      const START_PREFIX = "//__AI_BLOCK_START__:";
+      const END_PREFIX = "//__AI_BLOCK_END__:";
+
+      function parseBlocks(code) {
+        const blocks = [];
+        let idx = 0;
+        while (idx < code.length) {
+          const startPos = code.indexOf(START_PREFIX, idx);
+          if (startPos === -1) break;
+
+          const lineEnd = code.indexOf("\n", startPos);
+          if (lineEnd === -1) break;
+
+          const headerLine = code.slice(startPos, lineEnd).trim();
+          const parts = headerLine.split(":");
+          if (parts.length < 5) { idx = lineEnd + 1; continue; }
+
+          const id = parts[1];
+          const lang = parts[2];
+          const status = parts[3] || "pending";
+
+          const endMarker = `${END_PREFIX}${id}`;
+          const contentStart = lineEnd + 1;
+          const endPos = code.indexOf(endMarker, contentStart);
+          if (endPos === -1) break;
+
+          const endLineStart = endPos;
+          const endLineEnd = (() => {
+            const nl = code.indexOf("\n", endLineStart);
+            return nl === -1 ? endLineStart + endMarker.length : nl + 1;
+          })();
+
+          const content = code.slice(contentStart, endLineStart);
+
+          blocks.push({
+            id,
+            lang,
+            status,
+            startLineStart: startPos,
+            startLineEnd: lineEnd + 1,
+            contentStart,
+            contentEnd: endLineStart,
+            endLineEnd,
+            content,
+          });
+
+          idx = endLineEnd;
+        }
+        return blocks;
+      }
+
+      function renderBlocks() {
+        const code = editorEl.value;
+        const blocks = parseBlocks(code);
+        blocksEl.innerHTML = "";
+
+        if (blocks.length === 0) {
+          blocksEl.innerHTML = `<div style="color:#9d9d9d;font-size:12px;">No blocks detected.</div>`;
+          return;
+        }
+
+        for (const b of blocks) {
+          const card = document.createElement("div");
+          card.className = "blockCard";
+
+          const head = document.createElement("div");
+          head.className = "blockHead";
+
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          meta.textContent = `${b.lang} • ${b.id}`;
+
+          const select = document.createElement("select");
+          for (const s of ["pending", "accepted", "rejected"]) {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            if (s === b.status) opt.selected = true;
+            select.appendChild(opt);
+          }
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Reject+remove";
+
+          const applyStatus = (status) => {
+            const newHeader = `${blockHeader(b.id, b.lang, status)}\n`;
+            const before = code.slice(0, b.startLineStart);
+            const after = code.slice(b.startLineEnd);
+            updateEditorCode(before + newHeader + after);
+            renderBlocks();
+          };
+
+          select.onchange = () => applyStatus(select.value);
+          delBtn.onclick = () => {
+            const before = code.slice(0, b.startLineStart);
+            const after = code.slice(b.endLineEnd);
+            updateEditorCode(before + after);
+            renderBlocks();
+          };
+
+          head.appendChild(meta);
+          head.appendChild(select);
+          head.appendChild(delBtn);
+
+          const contentArea = document.createElement("textarea");
+          contentArea.className = "blockContent";
+          contentArea.value = b.content;
+          contentArea.onblur = () => {
+            const newContent = contentArea.value;
+            const before = code.slice(0, b.contentStart);
+            const after = code.slice(b.contentEnd);
+            updateEditorCode(before + newContent + after);
+            renderBlocks();
+          };
+
+          card.appendChild(head);
+          card.appendChild(contentArea);
+          blocksEl.appendChild(card);
+        }
+      }
+
+      function insertBlockForActiveFile() {
+        const code = editorEl.value;
+        const start = editorEl.selectionStart;
+        const end = editorEl.selectionEnd;
+        if (start === end) {
+          appendOut("\n[insertBlock] Select some text first.\n");
+          return;
+        }
+
+        const selected = code.slice(start, end);
+        const id = "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const lang = activeId;
+        const status = "pending";
+
+        const startLine = `${blockHeader(id, lang, status)}\n`;
+        const endLine = `${END_PREFIX}${id}\n`;
+
+        const before = code.slice(0, start);
+        const after = code.slice(end);
+        updateEditorCode(before + startLine + selected + "\n" + endLine + after);
+        renderBlocks();
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key === "Enter") {
+          e.preventDefault();
+          insertBlockForActiveFile();
+        }
+      });
+
+      // ----------------------------
+      // Terminal: run selected languages in one shared stream
+      // ----------------------------
+      function parseSSEChunk(raw, onEvent) {
+        const blocks = raw.split("\n\n");
+        for (const b of blocks) {
+          if (!b.trim()) continue;
+          const lines = b.split("\n");
+          let ev = "message";
+          let data = "";
+          for (const line of lines) {
+            if (line.startsWith("event:")) ev = line.slice(6).trim();
+            if (line.startsWith("data:")) data = line.slice(5).trim();
+          }
+          if (!data) continue;
+          onEvent(ev, JSON.parse(data));
+        }
+      }
+
+      function getCodeForLanguage(lang) {
+        const t = ytexts.get(lang);
+        return t ? t.toString() : "";
+      }
+
+      async function runChain() {
+        const selected = Array.from(document.querySelectorAll("input[type=checkbox][data-lang]:checked"))
+          .map((el) => el.getAttribute("data-lang"));
+
+        const steps = selected.map((lang) => ({
+          language: lang,
+          code: getCodeForLanguage(lang),
+          fileName: lang,
+        }));
+
+        if (!steps.length) {
+          appendOut("[select at least one language]\n");
+          return;
+        }
+
+        setStatus("running");
+        stopBtn.disabled = false;
+        controller = new AbortController();
+        appendOut("\n$ running chain: " + steps.map((s) => s.language).join(" -> ") + "\n");
+
+        const payload = {
+          steps,
+          timeoutMs: Number(document.getElementById("timeoutMs").value),
+          memoryBytes: Number(document.getElementById("memoryBytes").value),
+          nanoCpus: Number(document.getElementById("nanoCpus").value),
+        };
+
+        try {
+          const res = await fetch("/api/sandbox/run/chain", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
+          if (!res.ok) {
+            appendOut((await res.text()) + "\n");
+            setStatus("error");
+            return;
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let pending = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            pending += decoder.decode(value, { stream: true });
+            const end = pending.lastIndexOf("\n\n");
+            if (end < 0) continue;
+            const chunk = pending.slice(0, end + 2);
+            pending = pending.slice(end + 2);
+
+            parseSSEChunk(chunk, (event, data) => {
+              if (event === "step-start") appendOut("\n# [" + data.label + "] start\n");
+              else if (event === "chunk") appendOut(data.text || "");
+              else if (event === "step-done") appendOut("\n# [" + data.label + "] exit " + data.exitCode + "\n");
+              else if (event === "error") {
+                appendOut("\n! " + (data.message || data.error || "error") + "\n");
+                setStatus(data.code || "error");
+              } else if (event === "done") {
+                appendOut("\n$ done\n");
+                setStatus(data.ok ? "done" : "failed");
+              }
+            });
+          }
+        } catch (err) {
+          if (err.name === "AbortError") {
+            appendOut("\n$ aborted\n");
+            setStatus("aborted");
+          } else {
+            appendOut("\n! " + String(err) + "\n");
+            setStatus("error");
+          }
+        } finally {
+          controller = null;
+          stopBtn.disabled = true;
+        }
+      }
+
+      document.getElementById("runChain").onclick = runChain;
+      stopBtn.onclick = () => controller && controller.abort();
+      document.getElementById("clearTerminal").onclick = () => { outEl.textContent = ""; };
+
+      renderRemoteCursors();
+    </script>
+  </body>
+</html>
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iTECify IDE</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: Segoe UI, Roboto, Arial, sans-serif; background: #1e1e1e; color: #cccccc; }
+      .app {
+        height: 100vh;
+        display: grid;
+        grid-template-columns: 48px 260px 1fr;
+        grid-template-rows: 34px 1fr 240px;
+        grid-template-areas:
+          "title title title"
+          "activity sidebar editor"
+          "activity sidebar terminal";
+      }
+      .titlebar {
+        grid-area: title;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        background: #323233;
+        border-bottom: 1px solid #2a2a2a;
+        color: #e6e6e6;
+        font-size: 12px;
+      }
+      .activity {
+        grid-area: activity;
+        background: #333333;
+        border-right: 1px solid #2a2a2a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding-top: 8px;
+      }
+      .activity .dot { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #4a4a4a; background: #2a2a2a; }
+      .sidebar {
+        grid-area: sidebar;
+        background: #252526;
+        border-right: 1px solid #2a2a2a;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #9d9d9d; padding: 10px 12px; }
+      .file {
+        width: 100%;
+        border: 0;
+        text-align: left;
+        background: transparent;
+        color: #cccccc;
+        padding: 7px 12px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .file.active { background: #37373d; }
+      .editor { grid-area: editor; display: flex; flex-direction: column; min-width: 0; background: #1e1e1e; }
+      .tabbar { height: 36px; background: #2d2d2d; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; }
+      .tab { padding: 8px 12px; font-size: 12px; border-right: 1px solid #2a2a2a; background: #1e1e1e; color: #fff; }
+
+      .editorWrap { position: relative; flex: 1; min-height: 0; }
+      textarea {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border: 0;
+        outline: 0;
+        resize: none;
+        padding: 14px;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre;
+        overflow: auto;
+      }
+
+      .cursorLayer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .remoteCursor {
+        position: absolute;
+        width: 2px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+      }
+      .remoteLabel {
+        position: absolute;
+        transform: translateY(-16px);
+        font-size: 11px;
+        background: rgba(0,0,0,0.55);
+        border: 1px solid rgba(255,255,255,0.12);
+        padding: 1px 6px;
+        border-radius: 999px;
+        color: #fff;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      .blocksPanel {
+        border-top: 1px solid #2a2a2a;
+        background: #202020;
+        padding: 10px;
+        max-height: 220px;
+        overflow: auto;
+      }
+      .blocksTitle { font-size: 12px; color: #9d9d9d; margin-bottom: 8px; }
+      .blockCard { border: 1px solid #2a2a2a; background: #1a1a1a; border-radius: 8px; padding: 8px; margin-bottom: 10px; }
+      .blockHead { display: flex; align-items: center; gap: 8px; }
+      .blockHead .meta { font-size: 12px; color: #ddd; }
+      .blockHead select { padding: 4px 6px; font-size: 12px; }
+      .blockHead button { padding: 4px 8px; font-size: 12px; cursor: pointer; }
+      .blockContent {
+        margin-top: 8px;
+        width: 100%;
+        min-height: 90px;
+        background: #141414;
+        color: #d4d4d4;
+        border: 1px solid #2a2a2a;
+        border-radius: 6px;
+        padding: 8px;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .terminal { grid-area: terminal; display: flex; flex-direction: column; border-top: 1px solid #2a2a2a; background: #181818; }
+      .term-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-bottom: 1px solid #2a2a2a;
+        background: #1f1f1f;
+      }
+      .status { margin-left: auto; font-size: 12px; color: #9d9d9d; }
+      button, select { background: #2f2f2f; color: #dddddd; border: 1px solid #4a4a4a; border-radius: 4px; padding: 5px 8px; font-size: 12px; }
+      .checks { display: flex; gap: 8px; flex-wrap: wrap; }
+      .checks label { font-size: 12px; color: #c8c8c8; }
+      #terminalOut { flex: 1; margin: 0; padding: 10px; overflow: auto; white-space: pre-wrap; font-family: Consolas, Monaco, monospace; font-size: 12px; color: #d4d4d4; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="titlebar">iTECify IDE</div>
+      <aside class="activity">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </aside>
+
+      <aside class="sidebar">
+        <div class="section-title">Explorer</div>
+        <div id="files"></div>
+      </aside>
+
+      <section class="editor">
+        <div class="tabbar"><div class="tab" id="activeTab">—</div></div>
+        <div class="editorWrap">
+          <textarea id="codeEditor" spellcheck="false" wrap="off"></textarea>
+          <div class="cursorLayer" id="cursorLayer"></div>
+        </div>
+        <div class="blocksPanel">
+          <div class="blocksTitle">AI Blocks (editable, accept/reject)</div>
+          <div id="blocks"></div>
+        </div>
+      </section>
+
+      <section class="terminal">
+        <div class="term-head">
+          <strong style="font-size: 12px;">TERMINAL</strong>
+          <button id="runChain">Run Selected</button>
+          <button id="stopBtn" disabled>Stop</button>
+          <button id="clearTerminal">Clear</button>
+          <select id="timeoutMs">
+            <option value="30000">30s</option>
+            <option value="10000">10s</option>
+            <option value="60000">60s</option>
+          </select>
+          <select id="memoryBytes">
+            <option value="134217728">128MB</option>
+            <option value="268435456">256MB</option>
+            <option value="67108864">64MB</option>
+          </select>
+          <select id="nanoCpus">
+            <option value="1000000000">1 CPU</option>
+            <option value="500000000">0.5 CPU</option>
+            <option value="2000000000">2 CPU</option>
+          </select>
+          <div class="checks">
+            <label><input type="checkbox" data-lang="nodejs" checked />js</label>
+            <label><input type="checkbox" data-lang="python" checked />py</label>
+            <label><input type="checkbox" data-lang="rust" checked />rs</label>
+            <label><input type="checkbox" data-lang="c" checked />c</label>
+            <label><input type="checkbox" data-lang="cpp" checked />cpp</label>
+            <label><input type="checkbox" data-lang="csharp" checked />c#</label>
+          </div>
+          <span class="status" id="status">idle</span>
+        </div>
+        <pre id="terminalOut"></pre>
+      </section>
+    </div>
+
+    <script type="module">
+      import * as Y from "https://unpkg.com/yjs?module";
+      import { WebsocketProvider } from "https://unpkg.com/y-websocket?module";
+
+      const editorEl = document.getElementById("codeEditor");
+      const cursorLayerEl = document.getElementById("cursorLayer");
+      const filesEl = document.getElementById("files");
+      const blocksEl = document.getElementById("blocks");
+      const activeTabEl = document.getElementById("activeTab");
+
+      const outEl = document.getElementById("terminalOut");
+      const statusEl = document.getElementById("status");
+      const stopBtn = document.getElementById("stopBtn");
+
+      function setStatus(v) { statusEl.textContent = v; }
+      function appendOut(text) { outEl.textContent += text; outEl.scrollTop = outEl.scrollHeight; }
+
+      const FILES = [
+        { id: "nodejs", name: "main.js", language: "nodejs" },
+        { id: "python", name: "main.py", language: "python" },
+        { id: "rust", name: "main.rs", language: "rust" },
+        { id: "c", name: "main.c", language: "c" },
+        { id: "cpp", name: "main.cpp", language: "cpp" },
+        { id: "csharp", name: "main.cs", language: "csharp" },
+      ];
+
+      const SNIPPETS = {
+        nodejs: 'console.log("nodejs: hello");\n',
+        python: 'print("python: hello")\n',
+        rust: 'fn main() {\n    println!("rust: hello");\n}\n',
+        c: '#include <stdio.h>\nint main(void){\n  printf("c: hello\\n");\n  return 0;\n}\n',
+        cpp: '#include <iostream>\nint main(){\n  std::cout << "cpp: hello\\n";\n  return 0;\n}\n',
+        csharp: 'using System;\nclass Program {\n  static void Main() {\n    Console.WriteLine("csharp: hello");\n  }\n}\n',
+      };
+
+      const room = new URLSearchParams(location.search).get("room") || "default-room";
+      const wsHost = location.hostname || "localhost";
+      const providerUrl = `ws://${wsHost}:1234`;
+
+      const myName = "user-" + Math.floor(Math.random() * 10000);
+      const myColor = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
+
+      let activeId = "nodejs";
+      let controller = null;
+
+      // CRDT setup
+      const doc = new Y.Doc();
+      const provider = new WebsocketProvider(providerUrl, room, doc);
+      const awareness = provider.awareness;
+
+      const ytexts = new Map();
+      for (const f of FILES) {
+        const t = doc.getText(f.id);
+        ytexts.set(f.id, t);
+      }
+
+      // Seed initial code once per room (best-effort).
+      const initMap = doc.getMap("init");
+      if (!initMap.get("seeded")) {
+        initMap.set("seeded", true);
+        for (const f of FILES) {
+          const t = ytexts.get(f.id);
+          if (t.length === 0) t.insert(0, SNIPPETS[f.id] || "");
+        }
+      }
+
+      // UI: file explorer
+      for (const f of FILES) {
+        const btn = document.createElement("button");
+        btn.className = "file" + (f.id === activeId ? " active" : "");
+        btn.textContent = f.name;
+        btn.onclick = () => {
+          activeId = f.id;
+          editorEl.value = ytexts.get(activeId).toString();
+          activeTabEl.textContent = f.name;
+          renderBlocks();
+          renderRemoteCursors();
+          renderExplorer();
+        };
+        filesEl.appendChild(btn);
+      }
+
+      function renderExplorer() {
+        const buttons = Array.from(filesEl.querySelectorAll("button.file"));
+        for (const b of buttons) {
+          b.classList.toggle("active", b.textContent === FILES.find((x) => x.id === activeId).name);
+        }
+      }
+
+      activeTabEl.textContent = FILES.find((x) => x.id === activeId).name;
+      editorEl.value = ytexts.get(activeId).toString();
+      renderBlocks();
+
+      // Local cursor awareness
+      function getCursorState() {
+        const start = editorEl.selectionStart;
+        const end = editorEl.selectionEnd;
+        return { anchor: start, head: end };
+      }
+
+      function updateLocalCursor() {
+        const state = getCursorState();
+        awareness.setLocalStateField("cursor", { fileId: activeId, ...state, color: myColor, name: myName });
+      }
+
+      awareness.setLocalStateField("user", { name: myName, color: myColor });
+      editorEl.addEventListener("keyup", updateLocalCursor);
+      editorEl.addEventListener("click", updateLocalCursor);
+      editorEl.addEventListener("select", updateLocalCursor);
+      document.addEventListener("selectionchange", () => {
+        // Avoid spamming updates when selection is outside editor.
+        if (document.activeElement === editorEl) updateLocalCursor();
+      });
+      updateLocalCursor();
+
+      // Bind editor <-> CRDT text (replace whole content for MVP)
+      let applyingRemote = false;
+      function applyEditorToYText(value) {
+        const t = ytexts.get(activeId);
+        applyingRemote = true; // prevent observe handler from reapplying immediately
+        t.doc.transact(() => {
+          t.delete(0, t.length);
+          t.insert(0, value);
+        });
+        applyingRemote = false;
+      }
+
+      editorEl.addEventListener("input", () => {
+        if (applyingRemote) return;
+        applyEditorToYText(editorEl.value);
+        renderBlocks();
+        updateLocalCursor();
+      });
+
+      for (const [fileId, t] of ytexts.entries()) {
+        t.observe(() => {
+          if (fileId !== activeId) return;
+          if (applyingRemote) return;
+          editorEl.value = t.toString();
+          renderBlocks();
+          renderRemoteCursors();
+        });
+      }
+
+      // Cursor overlay rendering (approx monospace geometry)
+      let geometry = null;
+      function measureGeometry() {
+        if (geometry) return geometry;
+        const style = getComputedStyle(editorEl);
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingTop = parseFloat(style.paddingTop) || 0;
+        const font = style.font;
+        const fontSize = parseFloat(style.fontSize) || 13;
+        const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.5;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.font = font;
+        const charWidth = ctx.measureText("M").width || 8;
+        geometry = { paddingLeft, paddingTop, lineHeight, charWidth };
+        return geometry;
+      }
+
+      function caretToRowCol(text, pos) {
+        const before = text.slice(0, pos);
+        const lines = before.split("\n");
+        const row = Math.max(0, lines.length - 1);
+        const col = lines[lines.length - 1].length;
+        return { row, col };
+      }
+
+      function renderRemoteCursors() {
+        cursorLayerEl.innerHTML = "";
+        const geo = measureGeometry();
+        const text = editorEl.value;
+        const scrollLeft = editorEl.scrollLeft;
+        const scrollTop = editorEl.scrollTop;
+
+        const states = awareness.getStates();
+        for (const [clientId, st] of states.entries()) {
+          if (clientId === doc.clientID) continue;
+          const cur = st.cursor;
+          if (!cur || cur.fileId !== activeId) continue;
+          const pos = cur.head ?? cur.anchor;
+          if (typeof pos !== "number") continue;
+          const { row, col } = caretToRowCol(text, pos);
+          const left = geo.paddingLeft + col * geo.charWidth - scrollLeft;
+          const top = geo.paddingTop + row * geo.lineHeight - scrollTop;
+          const cursor = document.createElement("div");
+          cursor.className = "remoteCursor";
+          cursor.style.left = left + "px";
+          cursor.style.top = top + "px";
+          cursor.style.background = cur.color || "#fff";
+
+          const label = document.createElement("div");
+          label.className = "remoteLabel";
+          label.style.left = left + "px";
+          label.style.top = top + "px";
+          label.textContent = cur.name || "peer";
+          label.style.borderColor = "rgba(255,255,255,0.18)";
+
+          cursorLayerEl.appendChild(cursor);
+          cursorLayerEl.appendChild(label);
+        }
+      }
+
+      awareness.on("change", () => {
+        renderRemoteCursors();
+      });
+
+      // ----------------------------
+      // Block markers + editable panel
+      // ----------------------------
+      const START_PREFIX = "//__AI_BLOCK_START__:";
+      const END_PREFIX = "//__AI_BLOCK_END__:";
+
+      function parseBlocks(code) {
+        const blocks = [];
+        let idx = 0;
+        while (idx < code.length) {
+          const startPos = code.indexOf(START_PREFIX, idx);
+          if (startPos === -1) break;
+
+          const lineEnd = code.indexOf("\n", startPos);
+          if (lineEnd === -1) break;
+
+          const headerLine = code.slice(startPos, lineEnd).trim();
+          // headerLine: //__AI_BLOCK_START__:<id>:<lang>:<status>
+          const parts = headerLine.split(":");
+          if (parts.length < 5) {
+            idx = lineEnd + 1;
+            continue;
+          }
+          const id = parts[1];
+          const lang = parts[2];
+          const status = parts[3] || "pending";
+
+          const endMarker = `${END_PREFIX}${id}`;
+          const contentStart = lineEnd + 1;
+          const endPos = code.indexOf(endMarker, contentStart);
+          if (endPos === -1) break;
+
+          const endLineStart = endPos;
+          const endLineEnd = (() => {
+            const nl = code.indexOf("\n", endLineStart);
+            return nl === -1 ? endLineStart + endMarker.length : nl + 1;
+          })();
+
+          const content = code.slice(contentStart, endLineStart);
+          blocks.push({
+            id,
+            lang,
+            status,
+            startLineStart: startPos,
+            startLineEnd: lineEnd + 1, // includes newline
+            contentStart,
+            contentEnd: endLineStart,
+            endLineEnd,
+            content,
+          });
+
+          idx = endLineEnd;
+        }
+        return blocks;
+      }
+
+      function blockHeader(id, lang, status) {
+        return `${START_PREFIX}${id}:${lang}:${status}`;
+      }
+
+      function updateEditorCode(newCode) {
+        const t = ytexts.get(activeId);
+        applyingRemote = true;
+        t.doc.transact(() => {
+          t.delete(0, t.length);
+          t.insert(0, newCode);
+        });
+        applyingRemote = false;
+      }
+
+      function renderBlocks() {
+        const code = editorEl.value;
+        const blocks = parseBlocks(code);
+        blocksEl.innerHTML = "";
+
+        if (blocks.length === 0) {
+          blocksEl.innerHTML = `<div style="color:#9d9d9d;font-size:12px;">No blocks detected. Select code and insert a block from the terminal panel later.</div>`;
+          return;
+        }
+
+        for (const b of blocks) {
+          const card = document.createElement("div");
+          card.className = "blockCard";
+
+          const head = document.createElement("div");
+          head.className = "blockHead";
+
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          meta.textContent = `${b.lang} • ${b.id}`;
+
+          const select = document.createElement("select");
+          for (const s of ["pending", "accepted", "rejected"]) {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            if (s === b.status) opt.selected = true;
+            select.appendChild(opt);
+          }
+
+          const applyStatus = () => {
+            const status = select.value;
+            const newHeader = `${blockHeader(b.id, b.lang, status)}\n`;
+            const before = code.slice(0, b.startLineStart);
+            const after = code.slice(b.startLineEnd);
+            const newCode = before + newHeader + after;
+            updateEditorCode(newCode);
+            renderBlocks();
+          };
+
+          select.onchange = applyStatus;
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Reject+remove";
+          delBtn.onclick = () => {
+            // Remove markers + content from code entirely
+            const before = code.slice(0, b.startLineStart);
+            const after = code.slice(b.startLineEnd); // keep what comes after the start marker line;
+            // But also remove content and end marker lines:
+            const after2 = code.slice(b.endLineEnd);
+            updateEditorCode(before + after2);
+          };
+
+          head.appendChild(meta);
+          head.appendChild(select);
+          head.appendChild(delBtn);
+
+          const contentArea = document.createElement("textarea");
+          contentArea.className = "blockContent";
+          contentArea.value = b.content;
+          contentArea.oninput = () => {
+            // Keep typing local, commit on blur to reduce CRDT churn
+          };
+          contentArea.onblur = () => {
+            const newContent = contentArea.value;
+            const before = code.slice(0, b.contentStart);
+            const after = code.slice(b.contentEnd);
+            const newCode = before + newContent + after;
+            updateEditorCode(newCode);
+            renderBlocks();
+          };
+
+          card.appendChild(head);
+          card.appendChild(contentArea);
+          blocksEl.appendChild(card);
+        }
+      }
+
+      // Insert block button: we keep it minimal (wrap selection)
+      function insertBlockForActiveFile() {
+        const code = editorEl.value;
+        const start = editorEl.selectionStart;
+        const end = editorEl.selectionEnd;
+        if (start === end) {
+          appendOut("\n[insertBlock] Select some text first.\n");
+          return;
+        }
+        const selected = code.slice(start, end);
+        const id = "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const lang = activeId;
+        const status = "pending";
+
+        const startLine = `${blockHeader(id, lang, status)}\n`;
+        const endLine = `${END_PREFIX}${id}\n`;
+        const before = code.slice(0, start);
+        const after = code.slice(end);
+        const newCode = before + startLine + selected + "\n" + endLine + after;
+        updateEditorCode(newCode);
+        renderBlocks();
+      }
+
+      // For now insert block via double click on the terminal header run button long-press is overkill;
+      // We'll map keyboard shortcut: Ctrl+Enter inserts a block around selection.
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key === "Enter") {
+          e.preventDefault();
+          insertBlockForActiveFile();
+        }
+      });
+
+      // ----------------------------
+      // Terminal: run selected languages in one shared stream
+      // ----------------------------
+      function getCodeForLanguage(lang) {
+        const t = ytexts.get(lang);
+        return t ? t.toString() : "";
+      }
+
+      function parseSSEChunk(raw, onEvent) {
+        const blocks = raw.split("\n\n");
+        for (const b of blocks) {
+          if (!b.trim()) continue;
+          const lines = b.split("\n");
+          let ev = "message";
+          let data = "";
+          for (const line of lines) {
+            if (line.startsWith("event:")) ev = line.slice(6).trim();
+            if (line.startsWith("data:")) data = line.slice(5).trim();
+          }
+          if (!data) continue;
+          onEvent(ev, JSON.parse(data));
+        }
+      }
+
+      async function runChain() {
+        const selected = Array.from(document.querySelectorAll("input[type=checkbox][data-lang]:checked"))
+          .map((el) => el.getAttribute("data-lang"));
+
+        const steps = selected.map((lang) => ({
+          language: lang,
+          code: getCodeForLanguage(lang),
+          fileName: lang,
+        }));
+
+        if (!steps.length) {
+          appendOut("[select at least one language]\n");
+          return;
+        }
+
+        setStatus("running");
+        stopBtn.disabled = false;
+        controller = new AbortController();
+
+        appendOut("\n$ running chain: " + steps.map((s) => s.language).join(" -> ") + "\n");
+
+        const payload = {
+          steps,
+          timeoutMs: Number(document.getElementById("timeoutMs").value),
+          memoryBytes: Number(document.getElementById("memoryBytes").value),
+          nanoCpus: Number(document.getElementById("nanoCpus").value),
+        };
+
+        try {
+          const res = await fetch("/api/sandbox/run/chain", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
+
+          if (!res.ok) {
+            appendOut((await res.text()) + "\n");
+            setStatus("error");
+            return;
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let pending = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            pending += decoder.decode(value, { stream: true });
+            const end = pending.lastIndexOf("\n\n");
+            if (end < 0) continue;
+            const chunk = pending.slice(0, end + 2);
+            pending = pending.slice(end + 2);
+
+            parseSSEChunk(chunk, (event, data) => {
+              if (event === "step-start") appendOut("\n# [" + data.label + "] start\n");
+              else if (event === "chunk") appendOut(data.text || "");
+              else if (event === "step-done") appendOut("\n# [" + data.label + "] exit " + data.exitCode + "\n");
+              else if (event === "error") { appendOut("\n! " + (data.message || data.error || "error") + "\n"); setStatus(data.code || "error"); }
+              else if (event === "done") { appendOut("\n$ done\n"); setStatus(data.ok ? "done" : "failed"); }
+            });
+          }
+        } catch (err) {
+          if (err.name === "AbortError") {
+            appendOut("\n$ aborted\n");
+            setStatus("aborted");
+          } else {
+            appendOut("\n! " + String(err) + "\n");
+            setStatus("error");
+          }
+        } finally {
+          controller = null;
+          stopBtn.disabled = true;
+        }
+      }
+
+      document.getElementById("runChain").onclick = runChain;
+      stopBtn.onclick = () => controller && controller.abort();
+      document.getElementById("clearTerminal").onclick = () => { outEl.textContent = ""; };
+
+      // Initial cursor overlay
+      renderRemoteCursors();
+    </script>
+  </body>
+</html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iTECify IDE</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: Segoe UI, Roboto, Arial, sans-serif; background: #1e1e1e; color: #cccccc; }
+      .app {
+        height: 100vh;
+        display: grid;
+        grid-template-columns: 48px 260px 1fr;
+        grid-template-rows: 34px 1fr 220px;
+        grid-template-areas:
+          "title title title"
+          "activity sidebar editor"
+          "activity sidebar terminal";
+      }
+      .titlebar { grid-area: title; display: flex; align-items: center; padding: 0 12px; background: #323233; border-bottom: 1px solid #2a2a2a; color: #e6e6e6; font-size: 12px; }
+      .activity { grid-area: activity; background: #333333; border-right: 1px solid #2a2a2a; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 8px; }
+      .activity .dot { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #4a4a4a; background: #2a2a2a; }
+      .sidebar { grid-area: sidebar; background: #252526; border-right: 1px solid #2a2a2a; display: flex; flex-direction: column; min-width: 0; }
+      .editor { grid-area: editor; display: flex; flex-direction: column; min-width: 0; background: #1e1e1e; }
+      .terminal { grid-area: terminal; display: flex; flex-direction: column; border-top: 1px solid #2a2a2a; background: #181818; }
+      .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #9d9d9d; padding: 10px 12px; }
+      .file { width: 100%; border: 0; text-align: left; background: transparent; color: #cccccc; padding: 7px 12px; cursor: pointer; font-size: 13px; }
+      .file.active { background: #37373d; }
+      .tabbar { height: 36px; background: #2d2d2d; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; }
+      .tab { padding: 8px 12px; font-size: 12px; border-right: 1px solid #2a2a2a; background: #1e1e1e; color: #fff; }
+      textarea { flex: 1; width: 100%; background: #1e1e1e; color: #d4d4d4; border: 0; outline: 0; resize: none; padding: 14px; font-family: Consolas, Monaco, monospace; font-size: 13px; line-height: 1.5; }
+      .term-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid #2a2a2a; background: #1f1f1f; }
+      .status { margin-left: auto; font-size: 12px; color: #9d9d9d; }
+      button, select { background: #2f2f2f; color: #dddddd; border: 1px solid #4a4a4a; border-radius: 4px; padding: 5px 8px; font-size: 12px; }
+      .checks { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 6px; }
+      .checks label { font-size: 12px; color: #c8c8c8; }
+      #terminalOut { flex: 1; margin: 0; padding: 10px; overflow: auto; white-space: pre-wrap; font-family: Consolas, Monaco, monospace; font-size: 12px; color: #d4d4d4; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="titlebar">iTECify IDE</div>
+      <aside class="activity">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </aside>
+      <aside class="sidebar">
+        <div class="section-title">Explorer</div>
+        <div id="files"></div>
+      </aside>
+      <section class="editor">
+        <div class="tabbar"><div class="tab" id="activeTab"></div></div>
+        <textarea id="codeEditor" spellcheck="false"></textarea>
+      </section>
+      <section class="terminal">
+        <div class="term-head">
+          <strong style="font-size: 12px;">TERMINAL</strong>
+          <button id="runChain">Run</button>
+          <button id="stopBtn" disabled>Stop</button>
+          <button id="clearTerminal">Clear</button>
+          <select id="timeoutMs">
+            <option value="30000">30s</option>
+            <option value="10000">10s</option>
+            <option value="60000">60s</option>
+          </select>
+          <select id="memoryBytes">
+            <option value="134217728">128MB</option>
+            <option value="268435456">256MB</option>
+            <option value="67108864">64MB</option>
+          </select>
+          <select id="nanoCpus">
+            <option value="1000000000">1 CPU</option>
+            <option value="500000000">0.5 CPU</option>
+            <option value="2000000000">2 CPU</option>
+          </select>
+          <div class="checks">
+            <label><input type="checkbox" data-lang="nodejs" checked />js</label>
+            <label><input type="checkbox" data-lang="python" checked />py</label>
+            <label><input type="checkbox" data-lang="rust" checked />rs</label>
+            <label><input type="checkbox" data-lang="c" checked />c</label>
+            <label><input type="checkbox" data-lang="cpp" checked />cpp</label>
+            <label><input type="checkbox" data-lang="csharp" checked />c#</label>
+          </div>
+          <span class="status" id="status">idle</span>
+        </div>
+        <pre id="terminalOut"></pre>
+      </section>
+    </div>
+
+    <script>
+      const files = [
+        { id: "nodejs", name: "main.js", language: "nodejs", code: "console.log(\"nodejs: hello\");\n" },
+        { id: "python", name: "main.py", language: "python", code: "print(\"python: hello\")\n" },
+        { id: "rust", name: "main.rs", language: "rust", code: "fn main() {\n    println!(\"rust: hello\");\n}\n" },
+        { id: "c", name: "main.c", language: "c", code: "#include <stdio.h>\nint main(void){\n  printf(\"c: hello\\n\");\n  return 0;\n}\n" },
+        { id: "cpp", name: "main.cpp", language: "cpp", code: "#include <iostream>\nint main(){\n  std::cout << \"cpp: hello\\n\";\n  return 0;\n}\n" },
+        { id: "csharp", name: "main.cs", language: "csharp", code: "using System;\nclass Program {\n  static void Main() {\n    Console.WriteLine(\"csharp: hello\");\n  }\n}\n" },
+      ];
+
+      let activeId = "nodejs";
+      let controller = null;
+
+      const filesEl = document.getElementById("files");
+      const editorEl = document.getElementById("codeEditor");
+      const activeTabEl = document.getElementById("activeTab");
+      const outEl = document.getElementById("terminalOut");
+      const statusEl = document.getElementById("status");
+      const stopBtn = document.getElementById("stopBtn");
+
+      function setStatus(v) { statusEl.textContent = v; }
+      function currentFile() { return files.find((f) => f.id === activeId); }
+      function appendOut(text) { outEl.textContent += text; outEl.scrollTop = outEl.scrollHeight; }
+
+      function renderFiles() {
+        filesEl.innerHTML = "";
+        for (const f of files) {
+          const btn = document.createElement("button");
+          btn.className = "file" + (f.id === activeId ? " active" : "");
+          btn.textContent = f.name;
+          btn.onclick = () => {
+            activeId = f.id;
+            editorEl.value = f.code;
+            activeTabEl.textContent = f.name;
+            renderFiles();
+          };
+          filesEl.appendChild(btn);
+        }
+      }
+
+      editorEl.addEventListener("input", () => {
+        const f = currentFile();
+        if (f) f.code = editorEl.value;
+      });
+
+      function parseSSEChunk(raw, onEvent) {
+        const blocks = raw.split("\n\n");
+        for (const b of blocks) {
+          if (!b.trim()) continue;
+          const lines = b.split("\n");
+          let ev = "message";
+          let data = "";
+          for (const line of lines) {
+            if (line.startsWith("event:")) ev = line.slice(6).trim();
+            if (line.startsWith("data:")) data = line.slice(5).trim();
+          }
+          if (!data) continue;
+          onEvent(ev, JSON.parse(data));
+        }
+      }
+
+      async function runChain() {
+        const selected = Array.from(document.querySelectorAll("input[data-lang]:checked"))
+          .map((el) => el.getAttribute("data-lang"));
+        const steps = selected.map((lang) => files.find((f) => f.language === lang)).filter(Boolean)
+          .map((f) => ({ language: f.language, code: f.code, fileName: f.name }));
+        if (!steps.length) {
+          appendOut("[select at least one language]\n");
+          return;
+        }
+
+        setStatus("running");
+        stopBtn.disabled = false;
+        controller = new AbortController();
+        appendOut("\n$ running chain: " + steps.map((s) => s.language).join(" -> ") + "\n");
+
+        const payload = {
+          steps,
+          timeoutMs: Number(document.getElementById("timeoutMs").value),
+          memoryBytes: Number(document.getElementById("memoryBytes").value),
+          nanoCpus: Number(document.getElementById("nanoCpus").value),
+        };
+
+        try {
+          const res = await fetch("/api/sandbox/run/chain", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
+          if (!res.ok) {
+            appendOut((await res.text()) + "\n");
+            setStatus("error");
+            return;
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let pending = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            pending += decoder.decode(value, { stream: true });
+            const end = pending.lastIndexOf("\n\n");
+            if (end < 0) continue;
+            const chunk = pending.slice(0, end + 2);
+            pending = pending.slice(end + 2);
+
+            parseSSEChunk(chunk, (event, data) => {
+              if (event === "step-start") appendOut("\n# [" + data.label + "] start\n");
+              else if (event === "chunk") appendOut(data.text || "");
+              else if (event === "step-done") appendOut("\n# [" + data.label + "] exit " + data.exitCode + "\n");
+              else if (event === "error") { appendOut("\n! " + (data.message || data.error || "error") + "\n"); setStatus(data.code || "error"); }
+              else if (event === "done") { appendOut("\n$ done\n"); setStatus(data.ok ? "done" : "failed"); }
+            });
+          }
+        } catch (err) {
+          if (err.name === "AbortError") {
+            appendOut("\n$ aborted\n");
+            setStatus("aborted");
+          } else {
+            appendOut("\n! " + String(err) + "\n");
+            setStatus("error");
+          }
+        } finally {
+          controller = null;
+          stopBtn.disabled = true;
+        }
+      }
+
+      document.getElementById("runChain").onclick = runChain;
+      document.getElementById("stopBtn").onclick = () => controller && controller.abort();
+      document.getElementById("clearTerminal").onclick = () => { outEl.textContent = ""; };
+
+      editorEl.value = currentFile().code;
+      activeTabEl.textContent = currentFile().name;
+      renderFiles();
+    </script>
+  </body>
+</html>
+

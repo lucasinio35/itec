@@ -1,0 +1,20 @@
+{
+  "name": "itecify",
+  "version": "0.1.0",
+  "description": "iTECify — sandbox backend",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@y/websocket-server": "^0.1.5",
+    "dockerode": "^4.0.2",
+    "express": "^4.21.2",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.30"
+  }
+}
