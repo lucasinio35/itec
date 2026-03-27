@@ -5,16 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>iTECify IDE</title>
     <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.min.js"></script>
-    <script src="https://unpkg.com/y-monaco@0.1.0/dist/y-monaco.js"></script>
-    <script type="importmap">
-      {
-        "imports": {
-          "monaco-editor": "https://unpkg.com/monaco-editor@0.45.0/esm/vs/editor/editor.api.js"
-        }
-      }
+    <script>
+      var require = { paths: { 'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } };
     </script>
+    <script src="https://unpkg.com/y-monaco@0.1.0/dist/y-monaco.js"></script>
     <script src="https://unpkg.com/yjs@13.6.8/dist/yjs.js"></script>
     <script src="https://unpkg.com/y-websocket@1.5.0/dist/y-websocket.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
@@ -81,6 +78,7 @@
         font-size: 13px;
       }
       .file.active { background: #37373d; }
+      .file:hover { background: #4a4a4a; }
 
       .editor { grid-area: editor; display: flex; flex-direction: column; min-width: 0; background: #1e1e1e; }
       .tabbar { height: 36px; background: #2d2d2d; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; }
@@ -121,6 +119,7 @@
       }
       .status { margin-left: auto; font-size: 12px; color: #9d9d9d; }
       button, select { background: #2f2f2f; color: #dddddd; border: 1px solid #4a4a4a; border-radius: 4px; padding: 5px 8px; font-size: 12px; }
+      button:hover { background: #4a4a4a; }
       .checks { display: flex; gap: 8px; flex-wrap: wrap; }
       .checks label { font-size: 12px; color: #c8c8c8; }
 
@@ -141,6 +140,8 @@
       <aside class="sidebar">
         <div class="section-title">Explorer</div>
         <div id="files"></div>
+        <button id="addFile">Add File</button>
+        <input id="fileInput" type="file" multiple style="display:none">
       </aside>
 
       <section class="editor">
@@ -166,23 +167,9 @@
             <option value="10000">10s</option>
             <option value="60000">60s</option>
           </select>
-          <select id="memoryBytes">
-            <option value="134217728">128MB</option>
-            <option value="268435456">256MB</option>
-            <option value="67108864">64MB</option>
-          </select>
-          <select id="nanoCpus">
-            <option value="1000000000">1 CPU</option>
-            <option value="500000000">0.5 CPU</option>
-            <option value="2000000000">2 CPU</option>
-          </select>
           <div class="checks">
             <label><input type="checkbox" data-lang="nodejs" checked />js</label>
             <label><input type="checkbox" data-lang="python" checked />py</label>
-            <label><input type="checkbox" data-lang="rust" checked />rs</label>
-            <label><input type="checkbox" data-lang="c" checked />c</label>
-            <label><input type="checkbox" data-lang="cpp" checked />cpp</label>
-            <label><input type="checkbox" data-lang="csharp" checked />c#</label>
           </div>
           <span class="status" id="status">idle</span>
         </div>
@@ -191,8 +178,6 @@
     </div>
 
     <script type="module">
-      import * as monaco from 'monaco-editor';
-
       const Y = window.Y;
       const { WebsocketProvider } = window;
 
@@ -213,19 +198,11 @@
       const FILES = [
         { id: "nodejs", name: "main.js", language: "nodejs" },
         { id: "python", name: "main.py", language: "python" },
-        { id: "rust", name: "main.rs", language: "rust" },
-        { id: "c", name: "main.c", language: "c" },
-        { id: "cpp", name: "main.cpp", language: "cpp" },
-        { id: "csharp", name: "main.cs", language: "csharp" },
       ];
 
       const SNIPPETS = {
         nodejs: 'console.log("nodejs: hello");\n',
         python: 'print("python: hello")\n',
-        rust: 'fn main() {\n    println!("rust: hello");\n}\n',
-        c: '#include <stdio.h>\nint main(void){\n  printf("c: hello\\n");\n  return 0;\n}\n',
-        cpp: '#include <iostream>\nint main(){\n  std::cout << "cpp: hello\\n";\n  return 0;\n}\n',
-        csharp: 'using System;\nclass Program {\n  static void Main() {\n    Console.WriteLine("csharp: hello");\n  }\n}\n',
       };
 
       let activeId = "nodejs";
@@ -234,17 +211,20 @@
       let models = {};
       let binding;
 
+      let pyodide;
+      let outputBuffer = "";
+      const originalConsoleLog = console.log;
+      console.log = (...args) => {
+        outputBuffer += args.join(" ") + "\n";
+        originalConsoleLog(...args);
+      };
+
       // Wait for Monaco
       await new Promise((resolve) => {
-        if (window.monaco) {
+        require(['vs/editor/editor.main'], function() {
+          window.monaco = monaco;
           resolve();
-        } else {
-          require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
-          require(['vs/editor/editor.main'], () => {
-            window.monaco = monaco;
-            resolve();
-          });
-        }
+        });
       });
 
       // Create models
@@ -265,6 +245,10 @@
         renderWhitespace: 'selection',
         bracketMatching: 'always',
       });
+
+      // Load Pyodide
+      pyodide = await loadPyodide();
+      pyodide.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()");
 
       const room = new URLSearchParams(location.search).get("room") || "default-room";
       const wsHost = location.hostname || "localhost";
@@ -335,6 +319,81 @@
         for (const btn of Array.from(filesEl.querySelectorAll("button.file"))) {
           const id = FILES.find((x) => x.name === btn.textContent)?.id;
           btn.classList.toggle("active", id === activeId);
+        }
+      }
+
+      // Add File
+      document.getElementById("addFile").onclick = () => {
+        console.log("Add File clicked");
+        document.getElementById("fileInput").click();
+      };
+
+      document.getElementById("fileInput").onchange = (e) => {
+        for (const file of e.target.files) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const content = event.target.result;
+            const name = file.name;
+            const ext = name.split('.').pop().toLowerCase();
+            let language = "plaintext";
+            if (ext === "js") language = "javascript";
+            else if (ext === "py") language = "python";
+            const id = name.replace(/[^a-zA-Z0-9]/g, "_");
+            if (FILES.find(f => f.id === id)) {
+              appendOut(`File ${name} already exists\n`);
+              return;
+            }
+            FILES.push({ id, name, language });
+            models[id] = monaco.editor.createModel(content, language);
+            ytexts.set(id, doc.getText(id));
+            ytexts.get(id).insert(0, content);
+            // add button
+            const btn = document.createElement("button");
+            btn.className = "file";
+            btn.textContent = name;
+            btn.onclick = () => {
+              activeId = id;
+              editor.setModel(models[id]);
+              binding.destroy();
+              binding = new MonacoBinding(ytexts.get(id), models[id], new Set([editor]), awareness);
+              activeTabEl.textContent = name;
+              renderBlocks();
+              renderExplorer();
+            };
+            filesEl.appendChild(btn);
+          };
+          reader.readAsText(file);
+        }
+      };
+
+      // runCode
+      async function runCode(language, code, timeoutMs) {
+        outputBuffer = "";
+        try {
+          if (language === "nodejs" || language === "javascript") {
+            await Promise.race([
+              new Promise((resolve) => {
+                eval(code);
+                resolve();
+              }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeoutMs))
+            ]);
+            return outputBuffer;
+          } else if (language === "python") {
+            pyodide.runPython("sys.stdout.seek(0); sys.stdout.truncate(0)");
+            await Promise.race([
+              new Promise((resolve) => {
+                pyodide.runPython(code);
+                resolve();
+              }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeoutMs))
+            ]);
+            return pyodide.runPython("sys.stdout.getvalue()");
+          } else {
+            return `Execution not supported for ${language}`;
+          }
+        } catch (e) {
+          return e.message;
         }
       }
 
@@ -525,13 +584,7 @@
         const selected = Array.from(document.querySelectorAll("input[type=checkbox][data-lang]:checked"))
           .map((el) => el.getAttribute("data-lang"));
 
-        const steps = selected.map((lang) => ({
-          language: lang,
-          code: getCodeForLanguage(lang),
-          fileName: lang,
-        }));
-
-        if (!steps.length) {
+        if (!selected.length) {
           appendOut("[select at least one language]\n");
           return;
         }
@@ -539,66 +592,27 @@
         setStatus("running");
         stopBtn.disabled = false;
         controller = new AbortController();
-        appendOut("\n$ running chain: " + steps.map((s) => s.language).join(" -> ") + "\n");
+        appendOut("\n$ running: " + selected.join(" ") + "\n");
 
-        const payload = {
-          steps,
-          timeoutMs: Number(document.getElementById("timeoutMs").value),
-          memoryBytes: Number(document.getElementById("memoryBytes").value),
-          nanoCpus: Number(document.getElementById("nanoCpus").value),
-        };
+        const timeoutMs = Number(document.getElementById("timeoutMs").value);
 
-        try {
-          const res = await fetch("/api/sandbox/run/chain", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            signal: controller.signal,
-          });
-          if (!res.ok) {
-            appendOut((await res.text()) + "\n");
-            setStatus("error");
-            return;
+        for (const lang of selected) {
+          if (controller.signal.aborted) break;
+          appendOut(`\n# [${lang}] start\n`);
+          try {
+            const code = getCodeForLanguage(lang);
+            const output = await runCode(lang, code, timeoutMs);
+            appendOut(output);
+            appendOut(`\n# [${lang}] done\n`);
+          } catch (e) {
+            appendOut(`\n! [${lang}] ${e.message}\n`);
           }
-
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder("utf-8");
-          let pending = "";
-
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            pending += decoder.decode(value, { stream: true });
-            const end = pending.lastIndexOf("\n\n");
-            if (end < 0) continue;
-            const chunk = pending.slice(0, end + 2);
-            pending = pending.slice(end + 2);
-
-            parseSSEChunk(chunk, (event, data) => {
-              if (event === "step-start") appendOut("\n# [" + data.label + "] start\n");
-              else if (event === "chunk") appendOut(data.text || "");
-              else if (event === "step-done") appendOut("\n# [" + data.label + "] exit " + data.exitCode + "\n");
-              else if (event === "error") {
-                appendOut("\n! " + (data.message || data.error || "error") + "\n");
-                setStatus(data.code || "error");
-              } else if (event === "done") {
-                appendOut("\n$ done\n");
-                setStatus(data.ok ? "done" : "failed");
-              }
-            });
-          }
-        } catch (err) {
-          if (err.name === "AbortError") {
-            appendOut("\n$ aborted\n");
-            setStatus("aborted");
-          } else {
-            appendOut("\n! " + String(err) + "\n");
-            setStatus("error");
-          }
-        } finally {
-          controller = null;
-          stopBtn.disabled = true;
         }
+
+        appendOut("\n$ done\n");
+        setStatus("idle");
+        stopBtn.disabled = true;
+        controller = null;
       }
 
       document.getElementById("runChain").onclick = runChain;
