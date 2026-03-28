@@ -206,11 +206,7 @@
 
             monacoEditor.onDidChangeCursorPosition((e) => {
               cursorPos.textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column;
-              if (collaborators.length > 0) {
-                collaborators[0].line = e.position.lineNumber;
-                collaborators[0].col = e.position.column;
-                renderCollaboratorCursors();
-              }
+              setLocalCursorFromMonaco();
             });
 
             monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -300,17 +296,79 @@
           })
           .join('');
       }
+      
+      function updateCollaboratorsFromAwareness() {
+        if (!yjsProvider || !yjsProvider.awareness) return;
+        
+        const states = yjsProvider.awareness.getStates();
+        const myClientId = yjsDocument.clientID;
+        
+        // Update cursor positions from awareness
+        collaborators = [];
+        
+        states.forEach((state, clientId) => {
+          if (state.user && clientId !== myClientId) {
+            collaborators.push({
+              id: 'awareness-' + clientId,
+              name: state.user.name || 'Anonymous',
+              color: state.user.color || '#5fa1ff',
+              line: state.cursor?.anchor || state.cursor?.head ? 1 : 1,
+              col: 1,
+              isAI: false,
+              clientId: clientId
+            });
+          }
+        });
+        
+        // Add local user
+        if (currentUser) {
+          collaborators.push({
+            id: currentUser.id,
+            name: currentUser.username + ' (you)',
+            color: COLOR_SCHEMES.local,
+            line: 1,
+            col: 1,
+            isAI: false
+          });
+        }
+        
+        // Add AI Agent
+        collaborators.push({
+          id: 'ai',
+          name: 'AI Agent',
+          color: COLOR_SCHEMES.ai,
+          line: 1,
+          col: 1,
+          isAI: true
+        });
+        
+        renderCollaboratorCursors();
+      }
 
       function setLocalCursorFromMonaco() {
         if (!monacoEditor) return;
         const pos = monacoEditor.getPosition();
         if (!pos) return;
+        
+        // Update local display
         const localUser = collaborators.find(c => !c.isAI && (c.id === currentUser?.id || c.name.includes('(you)')));
         if (localUser) {
           localUser.line = pos.lineNumber;
           localUser.col = pos.column;
         }
         renderCollaboratorCursors();
+        
+        // Broadcast cursor position via awareness
+        if (yjsProvider && yjsProvider.awareness) {
+          const currentState = yjsProvider.awareness.getLocalState() || {};
+          yjsProvider.awareness.setLocalStateField('user', {
+            ...currentState.user,
+            cursor: {
+              line: pos.lineNumber,
+              col: pos.column
+            }
+          });
+        }
       }
 
       // Real cursor sync is handled by Yjs awareness (see initializeYjsProvider)
@@ -357,6 +415,11 @@
             yjsProvider.awareness.setLocalStateField('user', {
               name: currentUser ? currentUser.username : 'Anonymous',
               color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+            });
+            
+            // Listen for awareness changes (other users' cursor positions)
+            yjsProvider.awareness.on('change', () => {
+              updateCollaboratorsFromAwareness();
             });
           }
           

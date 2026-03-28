@@ -38,5 +38,25 @@
         "user-1774697355673-863943a3b04cf"
       ]
     }
+  ],
+  "files": [
+    {
+      "id": "file-1774705274595-e012f697f5d13",
+      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
+      "name": "clory.js",
+      "language": "nodejs",
+      "code": "",
+      "createdAt": 1774705274595,
+      "updatedAt": 1774705317518
+    },
+    {
+      "id": "file-1774705330616-a5281ca9d39338",
+      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
+      "name": "carina.js",
+      "language": "nodejs",
+      "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
+      "createdAt": 1774705330616,
+      "updatedAt": 1774705330616
+    }
   ]
 }
