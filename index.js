@@ -273,27 +273,29 @@ app.post('/api/workspaces/:workspaceId/files', authenticateJWT, (req, res) => {
   if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
   if (!canAccessWorkspace(req.user.id, workspace.id)) return res.status(403).json({ error: 'Forbidden' });
   
-  const { name, language, code } = req.body || {};
+  const { id, name, language, code, creatorId } = req.body || {};
   if (!name) return res.status(400).json({ error: 'File name is required' });
   
   const file = {
-    id: 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+    id: id || 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2),
     workspaceId: req.params.workspaceId,
     name: name.trim(),
     language: language || 'nodejs',
     code: code || '',
     createdAt: Date.now(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    creatorId: creatorId || req.user.id
   };
   
   files.push(file);
   saveDatabase();
   
-  // Broadcast to all connected clients in this workspace via WebSocket
+  // Broadcast to all connected clients in this workspace EXCEPT the creator
   broadcastToWorkspace(workspace.id, {
     type: 'file-created',
-    file: file
-  });
+    file: file,
+    excludeUserId: req.user.id  // Don't send back to creator
+  }, req.user.id);
   
   res.json({ message: 'File created', file });
 });
@@ -328,11 +330,25 @@ app.put('/api/files/:fileId', authenticateJWT, (req, res) => {
   
   saveDatabase();
   
-  // Broadcast update to all connected clients in this workspace
+  // Also update the Yjs doc if it exists
+  const roomName = `${file.workspaceId}/${file.id}`;
+  const room = yjs_docs.get(roomName);
+  if (room && code !== undefined) {
+    const yjsText = room.doc.getText('shared-code');
+    const currentContent = yjsText.toString();
+    if (currentContent !== code) {
+      room.doc.transact(() => {
+        yjsText.delete(0, yjsText.length);
+        yjsText.insert(0, code);
+      });
+    }
+  }
+  
+  // Broadcast update to all OTHER connected clients
   broadcastToWorkspace(file.workspaceId, {
     type: 'file-updated',
     file: { ...file }
-  });
+  }, req.user.id);
   
   res.json({ message: 'File updated', file });
 });
@@ -352,14 +368,35 @@ app.delete('/api/files/:fileId', authenticateJWT, (req, res) => {
   files.splice(fileIndex, 1);
   saveDatabase();
   
-  // Broadcast deletion to all connected clients in this workspace
+  // Broadcast deletion to all OTHER connected clients
   broadcastToWorkspace(workspaceId, {
     type: 'file-deleted',
     fileId: req.params.fileId
-  });
+  }, req.user.id);
   
   res.json({ message: 'File deleted' });
 });
+
+// Periodic save of Yjs docs to database
+setInterval(() => {
+  yjs_docs.forEach((room, roomName) => {
+    const pathParts = roomName.split('/');
+    if (pathParts.length === 2) {
+      const workspaceId = pathParts[0];
+      const fileId = pathParts[1];
+      const file = files.find(f => f.id === fileId && f.workspaceId === workspaceId);
+      if (file) {
+        const yjsText = room.doc.getText('shared-code');
+        const content = yjsText.toString();
+        if (content !== file.code) {
+          file.code = content;
+          file.updatedAt = Date.now();
+          saveDatabase();
+        }
+      }
+    }
+  });
+}, 5000); // Save every 5 seconds
 
 function withTempFile(ext, content) {
   const name = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
@@ -660,6 +697,19 @@ yjsWss.on('connection', (ws, req) => {
   const room = yjs_docs.get(roomName);
   room.clients.add(ws);
   
+  // Load file content from database if Yjs doc is empty
+  const pathParts = roomName.split('/');
+  if (pathParts.length === 2 && room.doc.getText('shared-code').length === 0) {
+    const workspaceId = pathParts[0];
+    const fileId = pathParts[1];
+    const file = files.find(f => f.id === fileId && f.workspaceId === workspaceId);
+    if (file && file.code) {
+      room.doc.transact(() => {
+        room.doc.getText('shared-code').insert(0, file.code);
+      });
+    }
+  }
+  
   // Send sync step 1 to new client
   const encoder = encoding.createEncoder();
   encoding.writeVarUint(encoder, messageSync);
@@ -780,6 +830,9 @@ syncWss.on('connection', (ws, req) => {
   const workspaceId = pathParts[2];
   const roomId = `sync-${workspaceId}`;
   
+  // Store userId on the websocket for filtering broadcasts
+  ws.userId = req.user?.id;
+  
   if (!yjs_rooms.has(roomId)) {
     yjs_rooms.set(roomId, new Set());
   }
@@ -798,13 +851,15 @@ syncWss.on('connection', (ws, req) => {
   });
 });
 
-// Broadcast to sync room
-function broadcastToWorkspace(workspaceId, message) {
+// Broadcast to sync room (optionally exclude a specific user)
+function broadcastToWorkspace(workspaceId, message, excludeUserId = null) {
   const roomId = `sync-${workspaceId}`;
   const room = yjs_rooms.get(roomId);
   if (room) {
     const msgStr = JSON.stringify(message);
     room.forEach(client => {
+      // Skip the sender if excludeUserId is provided and matches
+      if (excludeUserId && client.userId === excludeUserId) return;
       if (client.readyState === 1) {
         try {
           client.send(msgStr);

@@ -57,6 +57,15 @@
       "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
       "createdAt": 1774705330616,
       "updatedAt": 1774705330616
+    },
+    {
+      "id": "file-1774705622863-080f089a6b802",
+      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
+      "name": "trt.js",
+      "language": "nodejs",
+      "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
+      "createdAt": 1774705622863,
+      "updatedAt": 1774705622863
     }
   ]
 }
