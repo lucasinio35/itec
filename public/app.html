@@ -117,7 +117,7 @@
               <button id="agentPanelHideBtn">Hide</button>
             </div>
             <div style="margin-top:6px;">
-              <button id="agentSetKeyBtn" style="width:100%;background:#1a2a1a;border:1px solid #3a6a3a;color:#8fcf8f;border-radius:4px;padding:5px;font-size:11px;cursor:pointer;">🔑 Set OpenAI API Key</button>
+              <button id="agentSetKeyBtn" style="width:100%;background:#1a2a1a;border:1px solid #3a6a3a;color:#8fcf8f;border-radius:4px;padding:5px;font-size:11px;cursor:pointer;">🔑 Set Groq API Key</button>
             </div>
             <div id="agentKeyStatus" style="font-size:10px;color:#7a8090;padding:3px 0 0 0;"></div>
           </div>
@@ -1457,7 +1457,7 @@
       }
       agentSetKeyBtn.onclick = () => {
         const existing = localStorage.getItem('itecify-openai-key') || '';
-        const key = window.prompt('Paste your OpenAI API key (sk-...):\nThis is stored only in your browser localStorage.', existing);
+        const key = window.prompt('Paste your Groq API key (gsk_...):\nThis is stored only in your browser localStorage.', existing);
         if (key === null) return; // cancelled
         if (!key.trim()) {
           localStorage.removeItem('itecify-openai-key');

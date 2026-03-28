@@ -106,20 +106,20 @@ app.post('/api/ai', async (req, res) => {
   const apiKey = OPENAI_API_KEY || req.headers['x-openai-key'] || '';
 
   if (!apiKey) {
-    return res.json({ response: 'Error: No OpenAI API key configured.\n\nOptions:\n1. Set env var: set OPENAI_API_KEY=sk-...\n2. In the app: open "Code Assistant" → click "🔑 Set OpenAI API Key"' });
+    return res.json({ response: 'Error: No Groq API key configured.\n\nOptions:\n1. Set env var: set OPENAI_API_KEY=gsk_...\n2. In the app: open "Code Assistant" → click "🔑 Set Groq API Key"' });
   }
 
   const payload = JSON.stringify({
-    model: 'gpt-3.5-turbo',
+    model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 500,
     temperature: 0.7
   });
 
   const options = {
-    hostname: 'api.openai.com',
+    hostname: 'api.groq.com',
     port: 443,
-    path: '/v1/chat/completions',
+    path: '/openai/v1/chat/completions',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ app.post('/api/ai', async (req, res) => {
       response.on('data', chunk => data += chunk);
       response.on('end', () => {
         if (response.statusCode !== 200) {
-          return res.json({ response: `OpenAI API Error ${response.statusCode}: ${data}` });
+          return res.json({ response: `Groq API Error ${response.statusCode}: ${data}` });
         }
         try {
           const json = JSON.parse(data);

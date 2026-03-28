@@ -48,6 +48,16 @@
       "code": "",
       "createdAt": 1774708405819,
       "updatedAt": 1774709285688
+    },
+    {
+      "id": "file-1774715177268-8183e68434b64",
+      "workspaceId": "ws-1774715149921-c7ce2376b6fc88",
+      "name": "egg.js",
+      "language": "nodejs",
+      "code": "",
+      "createdAt": 1774715177286,
+      "updatedAt": 1774715798374,
+      "creatorId": "user-1774715130099-c153cac4c2fee"
     }
   ]
 }
