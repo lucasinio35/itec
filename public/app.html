@@ -139,11 +139,7 @@
       window.YJS_WEBSOCKET = WebsocketProvider;
       
       const STORAGE_KEY = 'itecify-ide-state-v2';
-      const DEFAULT_FILES = [
-        { id:'file-js', name:'main.js', language:'nodejs', code:'// Hello from JavaScript\nconsole.log("Hello, World!");\n' },
-        { id:'file-py', name:'main.py', language:'python', code:'# Hello from Python\nprint("Hello, World!")\n' },
-        { id:'file-html', name:'index.html', language:'html', code:'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Hello</title></head><body><h1>Hello, World!</h1></body></html>' }
-      ];
+      const DEFAULT_FILES = [];
       const TEMPLATES = {
         nodejs:'// Hello from JavaScript\nconsole.log("Hello, World!");\n',
         python:'# Hello from Python\nprint("Hello, World!")\n',
@@ -252,6 +248,17 @@
         return extMap[ext] || 'nodejs';
       }
 
+      function generateColorFromUsername(username) {
+        let hash = 0;
+        for (let i = 0; i < username.length; i++) {
+          const char = username.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash; // Convert to 32bit integer
+        }
+        const colors = ['#5fa1ff', '#5dd9ff', '#60d8a9', '#ffa06d', '#e89af9'];
+        return colors[Math.abs(hash) % colors.length];
+      }
+
       let collaborators = [];
       const COLOR_SCHEMES = {
         local: '#6cf',      // Green for "you"
@@ -326,21 +333,31 @@
         const states = yjsProvider.awareness.getStates();
         const myClientId = yjsDocument.clientID;
         
-        // Update cursor positions from awareness
-        collaborators = [];
+        // Track unique users by their ID/name, not clientId
+        const uniqueUsers = new Map();
         
         states.forEach((state, clientId) => {
           if (state.user && clientId !== myClientId) {
-            collaborators.push({
-              id: 'awareness-' + clientId,
-              name: state.user.name || 'Anonymous',
-              color: state.user.color || '#5fa1ff',
-              line: state.cursor?.anchor || state.cursor?.head ? 1 : 1,
-              col: 1,
-              isAI: false,
-              clientId: clientId
-            });
+            const username = state.user.name || 'Anonymous';
+            // Use username as key to deduplicate
+            if (!uniqueUsers.has(username)) {
+              uniqueUsers.set(username, {
+                id: 'awareness-' + username,
+                name: username,
+                color: generateColorFromUsername(username),
+                line: 1,
+                col: 1,
+                isAI: false
+              });
+            }
           }
+        });
+        
+        collaborators = [];
+        
+        // Add unique remote users
+        uniqueUsers.forEach(user => {
+          collaborators.push(user);
         });
         
         // Add local user
@@ -441,7 +458,7 @@
           if (monacoEditor && yjsProvider.awareness) {
             yjsProvider.awareness.setLocalStateField('user', {
               name: currentUser ? currentUser.username : 'Anonymous',
-              color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+              color: generateColorFromUsername(currentUser ? currentUser.username : 'Anonymous')
             });
             
             // Listen for awareness changes (other users' cursor positions)
@@ -722,9 +739,9 @@
         } catch (e) {
           console.warn('load state failed', e);
         }
-        if (!Array.isArray(state.files) || !state.files.length) {
-          state.files = DEFAULT_FILES.map(f => ({...f}));
-          state.activeId = state.files[0].id;
+        // Don't create default files - let users create their own
+        if (!Array.isArray(state.files)) {
+          state.files = [];
         }
         if (!Array.isArray(state.agents) || !state.agents.length) {
           state.agents = [{id:'agent-code', name:'Code Assistant'}];
@@ -768,8 +785,8 @@
                 await saveFileToServer(file);
               }
             } else {
-              // No files anywhere, create defaults
-              state.files = DEFAULT_FILES.map(f => ({...f, id: 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2)}));
+              // No files anywhere - let user create their own
+              state.files = [];
               state.activeId = state.files[0].id;
               for (const file of state.files) {
                 await saveFileToServer(file);
@@ -1154,13 +1171,12 @@
       }
 
       function deleteFile(id) {
-        if (state.files.length <= 1) { alert('Keep at least one file.'); return; }
         state.files = state.files.filter(f => f.id !== id);
         delete history[id];
-        if (state.activeId === id) state.activeId = state.files[0].id;
+        if (state.activeId === id) state.activeId = state.files.length > 0 ? state.files[0].id : null;
         saveState();
         renderFiles();
-        selectFile(state.activeId);
+        if (state.activeId) selectFile(state.activeId);
         
         // Delete from server
         if (authToken) {
@@ -1417,6 +1433,11 @@
           suggestionsEl.textContent = 'Please enter a prompt first.';
           return;
         }
+        const file = getActiveFile();
+        if (!file) {
+          suggestionsEl.textContent = 'Please select a file first.';
+          return;
+        }
         suggestionsEl.textContent = 'Thinking...';
         runOutput.textContent = 'AI is processing your prompt...';
         try {
@@ -1424,11 +1445,23 @@
           // Attach browser-stored key as a header if present
           const localKey = localStorage.getItem('itecify-openai-key');
           if (localKey) headers['x-openai-key'] = localKey;
+          
+          // Include current code context in the prompt
+          const contextPrompt = `You are a code assistant. The user is currently working on a ${file.language} file named "${file.name}".
+
+Current code:
+\`\`\`${file.language}
+${file.code}
+\`\`\`
+
+User request: ${prompt}
+
+If the user asks you to modify the code, respond with ONLY the complete modified code block wrapped in triple backticks (\`\`\`language ... \`\`\`), with no other text. Otherwise, provide your response normally.`;
 
           const res = await fetch('/api/ai', {
             method: 'POST',
             headers,
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ prompt: contextPrompt })
           });
           if (!res.ok) {
             const txt = await res.text();
@@ -1436,12 +1469,74 @@
           }
           const data = await res.json();
           const text = data.response || '[No response]';
-          suggestionsEl.textContent = text;
-          runOutput.textContent = 'AI response received.';
+          
+          // Try to extract and apply code block if present
+          const codeBlockRegex = /```([a-zA-Z0-9]*)?\s*([\s\S]*?)```/;
+          const match = text.match(codeBlockRegex);
+          
+          if (match && match[2]) {
+            const suggestedCode = match[2].trim();
+            // Use a data-* attribute instead of btoa to avoid UTF-8 encoding issues
+            const randomId = 'suggestion-' + Date.now();
+            window['_aiSuggestion_' + randomId] = suggestedCode;
+            // Show the suggestion with an apply button
+            suggestionsEl.innerHTML = `<div style="background:#1a3a1a;padding:10px;border-radius:4px;margin-bottom:10px;">
+              <div style="color:#8f8;margin-bottom:8px;font-weight:bold;">✓ Code modification suggested:</div>
+              <pre style="background:#0a0a0a;padding:8px;border-radius:3px;overflow-x:auto;font-size:11px;color:#aaa;margin:8px 0;">${suggestedCode.slice(0, 200).replace(/</g, '&lt;').replace(/>/g, '&gt;')}${suggestedCode.length > 200 ? '...' : ''}</pre>
+              <button style="background:#3a7a3a;border:1px solid #5a9a5a;color:#8f8;padding:6px 12px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="applyAISuggestion('${randomId}');">✓ Apply Changes</button>
+              <button style="background:#4a4a4a;border:1px solid #6a6a6a;color:#aaa;padding:6px 12px;border-radius:3px;cursor:pointer;font-size:12px;margin-left:8px;" onclick="rejectAISuggestion();">✗ Reject</button>
+            </div>`;
+            runOutput.textContent = 'AI suggested code changes. Click "Apply Changes" to use them.';
+          } else {
+            suggestionsEl.textContent = text;
+            runOutput.textContent = 'AI response received.';
+          }
         } catch (err) {
           suggestionsEl.textContent = 'AI error: ' + (err.message || err);
           runOutput.textContent = 'AI error: ' + (err.message || err);
         }
+      };
+      
+      // Global function to apply AI suggestions
+      window.applyAISuggestion = (suggestionId) => {
+        try {
+          const suggestedCode = window['_aiSuggestion_' + suggestionId];
+          if (!suggestedCode) {
+            console.warn('Suggestion not found:', suggestionId);
+            return;
+          }
+          const file = getActiveFile();
+          if (!file) return;
+          
+          // Update file code and editor
+          history[file.id].undo.push(file.code);
+          history[file.id].redo = [];
+          file.code = suggestedCode;
+          
+          if (monacoEditor) {
+            monacoEditor.setValue(suggestedCode);
+          }
+          
+          saveState();
+          broadcastFileUpdate(file);
+          
+          // Save to server
+          if (authToken && currentWorkspaceId) {
+            saveFileToServer(file);
+          }
+          
+          // Clean up
+          delete window['_aiSuggestion_' + suggestionId];
+          
+          runOutput.textContent = '✓ AI changes applied to ' + file.name;
+          agentPanelSuggestions.textContent = 'Changes applied! Type a new prompt to continue.';
+        } catch (err) {
+          console.warn('Failed to apply AI suggestion:', err);
+        }
+      };
+      
+      window.rejectAISuggestion = () => {
+        agentPanelSuggestions.textContent = 'Changes rejected. Type a new prompt.';
       };
 
       agentPanelSubmitBtn.onclick = () => sendAIPrompt(agentPanelPrompt.value, agentPanelSuggestions);

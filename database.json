@@ -17,6 +17,18 @@
       "username": "Carina",
       "email": "carina21@gmail.com",
       "password": "df4fb60f8e53f7540cb8a4ddfc1b8dc9a65ff094a152b3548ef6ad1ea481c8c7"
+    },
+    {
+      "id": "user-1774720347304-afd3e9f57bba78",
+      "username": "Carmen",
+      "email": "c@gmail.com",
+      "password": "6e5f7f7503c63f344b7769bbe0942bf56c0d86467fa4c2161dd09649989c8c26"
+    },
+    {
+      "id": "user-1774720861291-94f7c4c6533808",
+      "username": "Tudor",
+      "email": "d@gmail.com",
+      "password": "6e5f7f7503c63f344b7769bbe0942bf56c0d86467fa4c2161dd09649989c8c26"
     }
   ],
   "workspaces": [
@@ -36,6 +48,15 @@
       "members": [
         "user-1774692882611-7b620b9e891598",
         "user-1774697355673-863943a3b04cf"
+      ]
+    },
+    {
+      "id": "ws-1774720296827-861b0b2a528af8",
+      "name": "Workspace-ul lui Ana",
+      "ownerId": "user-1774715141065-bdc6a99001b08",
+      "members": [
+        "user-1774715141065-bdc6a99001b08",
+        "user-1774720347304-afd3e9f57bba78"
       ]
     }
   ],
