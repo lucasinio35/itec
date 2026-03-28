@@ -85,6 +85,9 @@ function cleanupPath(filePath) {
 }
 
 const EXEC_TIMEOUT_MS = 10000; // 10 seconds max execution time
+const IS_WINDOWS = process.platform === 'win32';
+// On Windows, GCC/G++/rustc automatically append .exe to output files with no extension
+const EXE_EXT = IS_WINDOWS ? '.exe' : '';
 
 function runCommand(lang, code) {
   return new Promise((resolve) => {
@@ -102,14 +105,15 @@ function runCommand(lang, code) {
     const killOnTimeout = (childProc, label) => {
       return setTimeout(() => {
         if (!finished) {
-          try { childProc.kill('SIGKILL'); } catch (_) {}
+          try { childProc.kill(); } catch (_) {} // kill() works cross-platform; SIGKILL does not exist on Windows
           done(null, '', `${label} timed out after ${EXEC_TIMEOUT_MS / 1000}s`, 124);
         }
       }, EXEC_TIMEOUT_MS);
     };
 
     const attachRunProcess = (exePath) => {
-      const run = spawn(exePath, [], { stdio: ['ignore', 'pipe', 'pipe'] });
+      // shell:true needed on Windows to execute binaries in arbitrary temp paths
+      const run = spawn(exePath, [], { stdio: ['ignore', 'pipe', 'pipe'], shell: IS_WINDOWS });
       const timer = killOnTimeout(run, 'execution');
       let out = '', err = '';
       run.stdout.on('data', d => out += d.toString());
@@ -121,10 +125,30 @@ function runCommand(lang, code) {
     if (lang === 'nodejs') {
       proc = spawn('node', ['-e', code], { stdio: ['ignore', 'pipe', 'pipe'] });
     } else if (lang === 'python') {
-      proc = spawn('python', ['-c', code], { stdio: ['ignore', 'pipe', 'pipe'] });
+      // Try python aliases in order; self-contained with return so it never
+      // conflicts with the fall-through bottom listener block.
+      const pyAliases = IS_WINDOWS ? ['python', 'python3'] : ['python3', 'python'];
+      const tryPython = (idx) => {
+        if (idx >= pyAliases.length) {
+          return done(null, '', 'Python interpreter not found. Install Python and ensure it is in PATH.', 1);
+        }
+        const p = spawn(pyAliases[idx], ['-c', code], { stdio: ['ignore', 'pipe', 'pipe'] });
+        let out = '', errStr = '';
+        const t = killOnTimeout(p, pyAliases[idx]);
+        p.stdout.on('data', d => out += d.toString());
+        p.stderr.on('data', d => errStr += d.toString());
+        p.on('error', (e) => {
+          clearTimeout(t);
+          if (e.code === 'ENOENT') { tryPython(idx + 1); }
+          else { done(e, '', e.message, 500); }
+        });
+        p.on('close', (s) => { clearTimeout(t); done(null, out, errStr, s); });
+      };
+      tryPython(0);
+      return;
     } else if (lang === 'rust') {
       const src = withTempFile('rs', code);
-      const exeName = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const exeName = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}${EXE_EXT}`;
       const exe = path.join(os.tmpdir(), exeName);
       tempFiles.push(src, exe);
       let compileStderr = '';
@@ -139,7 +163,7 @@ function runCommand(lang, code) {
     } else if (lang === 'c' || lang === 'cpp') {
       const ext = lang === 'c' ? 'c' : 'cpp';
       const src = withTempFile(ext, code);
-      const exeName = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const exeName = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}${EXE_EXT}`;
       const exe = path.join(os.tmpdir(), exeName);
       tempFiles.push(src, exe);
       const compiler = lang === 'c' ? 'gcc' : 'g++';
@@ -182,7 +206,7 @@ function runCommand(lang, code) {
     const timer = killOnTimeout(proc, lang);
     proc.stdout.on('data', chunk => stdout += chunk.toString());
     proc.stderr.on('data', chunk => stderr += chunk.toString());
-    proc.on('error', (err) => { clearTimeout(timer); done(err, '', err.message, 500); });
+    proc.on('error', (e) => { clearTimeout(timer); done(e, '', e.message, 500); });
     proc.on('close', (code) => { clearTimeout(timer); done(null, stdout, stderr, code); });
   });
 }

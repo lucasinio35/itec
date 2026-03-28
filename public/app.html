@@ -314,6 +314,8 @@
         state.activeId = file.id;
         codeEditor.value = file.code;
         statusFile.textContent = file.name + ' [' + file.language + ']';
+        // Clear stale output from the previous file
+        runOutput.textContent = 'Output will appear here.';
         renderFiles();
         updateCursor();
         saveState();
