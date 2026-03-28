@@ -62,6 +62,11 @@
       <div class="top">
         <h1>iTECify IDE</h1>
         <div class="controls">
+          <span id="loggedUser" style="color:#8f8; margin-right:16px; font-size:12px">Loading...</span>
+          <select id="workspaceSelect" title="Workspace" style="min-width:150px"></select>
+          <button id="createWorkspaceBtn">Create Workspace</button>
+          <button id="addMemberBtn">Add Member</button>
+          <button id="logoutBtn">Logout</button>
           <button id="newFileBtn">New File</button>
           <button id="importFileBtn">Import</button>
           <input id="fileUpload" type="file" class="hidden" />
@@ -97,6 +102,7 @@
           <div class="tabbar" id="tabBar"></div>
           <textarea id="codeEditor" spellcheck="false"></textarea>
           <div class="status"><span id="statusFile">No file selected</span><span id="cursorPos">Ln 1, Col 1</span></div>
+          <div class="status" id="multiCursorStatus">Collaborators: <span id="multiCursorList">None</span></div>
           <div class="output" id="runOutput">Output will appear here.</div>
         </section>
       </div>
@@ -127,6 +133,11 @@
       const statusFile = document.getElementById('statusFile');
       const cursorPos = document.getElementById('cursorPos');
       const runOutput = document.getElementById('runOutput');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const loggedUserLabel = document.getElementById('loggedUser');
+      const workspaceSelect = document.getElementById('workspaceSelect');
+      const createWorkspaceBtn = document.getElementById('createWorkspaceBtn');
+      const addMemberBtn = document.getElementById('addMemberBtn');
       const agentListEl = document.getElementById('agentList');
       const agentPanel = document.getElementById('agentPanel');
       const agentPanelTitle = document.getElementById('agentPanelTitle');
@@ -141,11 +152,50 @@
         return extMap[ext] || 'nodejs';
       }
 
+      const collaborators = [
+        { id: 'local', name: 'Ana (you)', color: '#6cf', line: 1, col: 1, isAI: false },
+        { id: 'remote', name: 'Radu', color: '#9af', line: 1, col: 1, isAI: false },
+        { id: 'ai', name: 'AI Agent', color: '#f9a', line: 1, col: 1, isAI: true },
+      ];
+
+      const multiCursorList = document.getElementById('multiCursorList');
+
+      function renderCollaboratorCursors() {
+        multiCursorList.innerHTML = collaborators
+          .map(c => `<span style="color:${c.color}; padding-right:12px">${c.name}: Ln ${c.line}, Col ${c.col}${c.isAI ? ' (AI)' : ''}</span>`)
+          .join('');
+      }
+
+      function setLocalCursorFromTextArea() {
+        const pos = codeEditor.selectionStart;
+        const lines = codeEditor.value.slice(0, pos).split('\n');
+        const line = lines.length;
+        const col = lines[lines.length - 1].length + 1;
+        collaborators[0].line = line;
+        collaborators[0].col = col;
+        renderCollaboratorCursors();
+      }
+
+      setInterval(() => {
+        if (!state.activeId) return;
+        // simulate other collaborator/AI cursor movement
+        const target = collaborators[1 + Math.floor(Math.random() * 2)];
+        const file = state.files.find(f => f.id === state.activeId);
+        if (!file) return;
+        const totalLines = file.code.split('\n').length;
+        target.line = Math.max(1, Math.min(totalLines, target.line + Math.floor(Math.random() * 3) - 1));
+        target.col = Math.max(1, Math.min(80, target.col + Math.floor(Math.random() * 5) - 2));
+        renderCollaboratorCursors();
+      }, 1200);
+
       let state = { files: [], activeId: null, agents: [{id:'agent-code', name:'Code Assistant'}] };
       let history = {};
       let isUndoRedo = false;
       let currentAgentId = null;
       let undoDebounceTimer = null;
+      let authToken = localStorage.getItem('itecify-auth-token') || null;
+      let currentUser = null;
+      let currentWorkspaceId = localStorage.getItem('itecify-workspace-id') || null;
 
       function loadState() {
         try {
@@ -168,6 +218,42 @@
       function saveState() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       }
+
+      function broadcastFileUpdate(file) {
+        if (!file) return;
+        const payload = {
+          fileId: file.id,
+          code: file.code,
+          language: file.language,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('itecify-collab-update', JSON.stringify(payload));
+      }
+
+      window.addEventListener('storage', (event) => {
+        if (event.key !== 'itecify-collab-update' || !event.newValue) return;
+        try {
+          const data = JSON.parse(event.newValue);
+          if (!data.fileId) return;
+          const file = state.files.find(f => f.id === data.fileId);
+          if (!file) return;
+          // Prevent applying stale updates from the same tab (localStorage event is tab-isolated)
+          if (file.code === data.code) return;
+          file.code = data.code;
+          if (state.activeId === file.id) {
+            const caret = codeEditor.selectionStart;
+            codeEditor.value = data.code;
+            codeEditor.selectionStart = codeEditor.selectionEnd = caret;
+          }
+          if (state.activeId === file.id) {
+            statusFile.textContent = file.name + ' [' + file.language + '] (updated remotely)';
+          }
+          renderFiles();
+          saveState();
+        } catch (err) {
+          console.warn('collab update parse failed', err);
+        }
+      });
 
       function renderFiles() {
         fileListEl.innerHTML = '';
@@ -307,6 +393,60 @@
 
       function getActiveFile() { return state.files.find(f => f.id === state.activeId); }
 
+      async function refreshWorkspaces() {
+        if (!authToken) return;
+        try {
+          const res = await fetch('/api/workspaces', { headers: { Authorization: 'Bearer ' + authToken } });
+          const data = await res.json();
+          if (res.ok) {
+            workspaceSelect.innerHTML = '';
+            data.workspaces.forEach(ws => {
+              const option = document.createElement('option');
+              option.value = ws.id;
+              option.textContent = ws.name + ' (' + ws.id + ')';
+              workspaceSelect.appendChild(option);
+            });
+            if (currentWorkspaceId && data.workspaces.some(w => w.id === currentWorkspaceId)) {
+              workspaceSelect.value = currentWorkspaceId;
+            } else if (data.workspaces.length) {
+              currentWorkspaceId = data.workspaces[0].id;
+              workspaceSelect.value = currentWorkspaceId;
+              localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
+            }
+          } else {
+            console.warn('workspaces load failed', data);
+          }
+        } catch (err) {
+          console.warn('workspaces load failed', err);
+        }
+      }
+
+      function updateAuthUI() {
+        if (currentUser) {
+          loggedUserLabel.textContent = `Logged in as ${currentUser.username}`;
+        } else {
+          loggedUserLabel.textContent = 'No user';
+        }
+      }
+
+      async function setCredentials(token, user) {
+        authToken = token;
+        currentUser = user;
+        localStorage.setItem('itecify-auth-token', authToken);
+        updateAuthUI();
+        await refreshWorkspaces();
+      }
+
+      function clearCredentials() {
+        authToken = null;
+        currentUser = null;
+        localStorage.removeItem('itecify-auth-token');
+        updateAuthUI();
+        workspaceSelect.innerHTML = '';
+        currentWorkspaceId = null;
+        localStorage.removeItem('itecify-workspace-id');
+      }
+
       function selectFile(fileId) {
         const file = state.files.find(f => f.id === fileId);
         if (!file) return;
@@ -375,7 +515,12 @@
       function updateCursor() {
         const pos = codeEditor.selectionStart;
         const lines = codeEditor.value.slice(0, pos).split('\n');
-        cursorPos.textContent = 'Ln ' + lines.length + ', Col ' + (lines[lines.length - 1].length + 1);
+        const line = lines.length;
+        const col = lines[lines.length - 1].length + 1;
+        cursorPos.textContent = 'Ln ' + line + ', Col ' + col;
+        collaborators[0].line = line;
+        collaborators[0].col = col;
+        renderCollaboratorCursors();
       }
 
 
@@ -414,45 +559,59 @@
           return msg;
         }
 
-        if (file.language === 'nodejs') {
-          let capture = '';
-          const originalLog = console.log;
-          const originalError = console.error;
-          console.log = (...args) => { capture += args.map(x => String(x)).join(' ') + '\n'; };
-          console.error = (...args) => { capture += args.map(x => String(x)).join(' ') + '\n'; };
-          let result;
-          try {
-            new Function(file.code)();
-            result = capture || 'JavaScript executed successfully (no output).';
-          } catch (err) {
-            result = 'JavaScript error: ' + err;
-          } finally {
-            console.log = originalLog;
-            console.error = originalError;
-          }
-          if (setOutput) runOutput.textContent = result;
-          return result;
-        }
-
-        try {
-          const res = await fetch('/api/sandbox/run', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ language:file.language, code:file.code })
-          });
-
-          if (!res.ok) {
-            const text = await res.text();
-            const msg = 'Run failed: ' + res.status + '\n' + text;
+        if (['js', 'nodejs', 'python', 'rust', 'c', 'cpp', 'csharp', 'php'].includes(file.language)) {
+          if (!authToken || !currentWorkspaceId) {
+            const msg = 'Login and select workspace to run sandbox code.';
             if (setOutput) runOutput.textContent = msg;
             return msg;
           }
+          try {
+            const res = await fetch('/api/sandbox/run', {
+              method:'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + authToken
+              },
+              body: JSON.stringify({ language: file.language === 'js' ? 'nodejs' : file.language, code: file.code, workspaceId: currentWorkspaceId })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              const msg = 'Run failed: ' + (data.error || res.statusText || 'Unknown');
+              if (setOutput) runOutput.textContent = msg;
+              return msg;
+            }
+            const msg = 'exit=' + (data.code ?? '?') + '\nstdout:\n' + (data.stdout || '') + '\nstderr:\n' + (data.stderr || '');
+            if (setOutput) runOutput.textContent = msg;
+            return msg;
+          } catch (err) {
+            const msg = 'Run error: ' + err.message;
+            if (setOutput) runOutput.textContent = msg;
+            return msg;
+          }
+        }
 
-          const data = await res.json();
-          const msg = 'exit=' + data.code + '\nstdout:\n' + (data.stdout||'') + '\nstderr:\n' + (data.stderr||'');
-          if (setOutput) runOutput.textContent = msg;
-          return msg;
-        } catch (err) {
-          const msg = 'Run error: ' + err.message;
+        if (file.language === 'html') {
+          if (setOutput) {
+            runOutput.innerHTML = '';
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '300px';
+            iframe.style.border = '1px solid #444';
+            iframe.srcdoc = file.code;
+            runOutput.appendChild(iframe); 
+          }
+          return '[HTML rendered in iframe]';
+        }
+
+        if (file.language === 'css') {
+          let styleEl = document.getElementById('itecify-runtime-style');
+          if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'itecify-runtime-style';
+            document.head.appendChild(styleEl);
+          }
+          styleEl.textContent = file.code;
+          const msg = 'CSS applied to the UI.';
           if (setOutput) runOutput.textContent = msg;
           return msg;
         }
@@ -487,6 +646,49 @@
         fullOutput += '\nAll files processed.';
         runOutput.textContent = fullOutput;
       }
+
+      logoutBtn.onclick = () => {
+        clearCredentials();
+        window.location.href = '/login.html';
+      };
+
+      createWorkspaceBtn.onclick = async () => {
+        const name = window.prompt('Workspace name:', 'My Workspace');
+        if (!name) return;
+        if (!authToken) { alert('Log in first'); return; }
+        const res = await fetch('/api/workspaces', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+          body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert('Create workspace failed: ' + (data.error || res.statusText)); return; }
+        currentWorkspaceId = data.workspace.id;
+        localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
+        await refreshWorkspaces();
+        alert('Workspace created: ' + data.workspace.name);
+      };
+
+      addMemberBtn.onclick = async () => {
+        if (!currentWorkspaceId) { alert('Select or create a workspace first'); return; }
+        const identifier = window.prompt('User username or email to add to workspace:');
+        if (!identifier) return;
+        if (!authToken) { alert('Log in first'); return; }
+        const res = await fetch(`/api/workspaces/${currentWorkspaceId}/add-member`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+          body: JSON.stringify({ identifier })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert('Add member failed: ' + (data.error || res.statusText)); return; }
+        await refreshWorkspaces();
+        alert('Member added successfully.');
+      };
+
+      workspaceSelect.onchange = () => {
+        currentWorkspaceId = workspaceSelect.value;
+        localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
+      };
 
       const sendAIPrompt = async (promptText, suggestionsEl) => {
         const prompt = promptText.trim();
@@ -615,6 +817,7 @@
           }, 500);
         }
         saveState();
+        broadcastFileUpdate(file);
       });
 
       codeEditor.addEventListener('keydown', (e) => {
@@ -650,6 +853,24 @@
       });
 
       // Initialize app
+      // Check for auth token, redirect to login if missing
+      if (!authToken) {
+        window.location.href = '/login.html';
+      } else {
+        try {
+          const savedUser = localStorage.getItem('itecify-current-user');
+          if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+          }
+        } catch (err) {
+          console.warn('parse user failed', err);
+        }
+      }
+
+      updateAuthUI();
+      if (authToken) {
+        refreshWorkspaces();
+      }
       loadState();
       renderFiles();
       renderAgents();

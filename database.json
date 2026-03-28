@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "id": "user-1774690032787-d6a9f435f05148",
+      "username": "testuser",
+      "email": "test@example.com",
+      "password": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f"
+    }
+  ],
+  "workspaces": [
+    {
+      "id": "ws-1774690093005-dc66d27b5e0d3",
+      "name": "Test Workspace",
+      "ownerId": "user-1774690032787-d6a9f435f05148",
+      "members": [
+        "user-1774690032787-d6a9f435f05148"
+      ]
+    }
+  ]
+}
