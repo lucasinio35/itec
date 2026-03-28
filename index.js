@@ -8,6 +8,10 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const http = require('http');
+const encoding = require('lib0/encoding');
+const decoding = require('lib0/decoding');
+const syncProtocol = require('y-protocols/sync');
+const awarenessProtocol = require('y-protocols/awareness');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3002;
@@ -357,24 +361,6 @@ app.delete('/api/files/:fileId', authenticateJWT, (req, res) => {
   res.json({ message: 'File deleted' });
 });
 
-// Helper: broadcast message to all WebSocket clients in a workspace
-function broadcastToWorkspace(workspaceId, message) {
-  yjs_rooms.forEach((clients, roomId) => {
-    // roomId format: "workspaceId/fileId"
-    if (roomId.startsWith(workspaceId + '/')) {
-      clients.forEach(client => {
-        if (client.readyState === 1) { // WebSocket.OPEN
-          try {
-            client.send(JSON.stringify(message));
-          } catch (err) {
-            console.warn('Broadcast error:', err.message);
-          }
-        }
-      });
-    }
-  });
-}
-
 function withTempFile(ext, content) {
   const name = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
   const filePath = path.join(os.tmpdir(), name);
@@ -567,71 +553,267 @@ app.post('/api/sandbox/run/chain', authenticateJWT, async (req, res) => {
 
 // Create HTTP server and attach WebSocket server
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/yjs/:workspaceId/:fileId' });
 
-// WebSocket connection handler for Yjs synchronization
-wss.on('connection', (ws, req) => {
+// Yjs WebSocket server - handles CRDT document sync
+const yjsWss = new WebSocketServer({ noServer: true });
+
+// Sync WebSocket server - handles file create/delete/rename notifications
+const syncWss = new WebSocketServer({ noServer: true });
+
+// Handle WebSocket upgrade for /yjs path (Yjs CRDT sync)
+server.on('upgrade', (request, socket, head) => {
+  const url = new URL(request.url, `http://${request.headers.host}`);
+  const pathParts = url.pathname.split('/');
+  
+  // /yjs/workspaceId/fileId - Yjs document sync
+  if (pathParts[1] === 'yjs' && pathParts.length >= 4) {
+    const workspaceId = pathParts[2];
+    const fileId = pathParts[3];
+    const token = url.searchParams.get('token');
+    
+    if (!workspaceId || !fileId || !token) {
+      socket.destroy();
+      return;
+    }
+    
+    // Verify JWT token
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      request.user = decoded;
+    } catch (err) {
+      console.warn('WebSocket auth failed:', err.message);
+      socket.destroy();
+      return;
+    }
+    
+    // Check workspace access
+    const workspace = workspaces.find(w => w.id === workspaceId);
+    if (!workspace || !workspace.members.includes(decoded.id)) {
+      console.warn('WebSocket: No access to workspace', workspaceId);
+      socket.destroy();
+      return;
+    }
+    
+    // Modify URL to use room name as expected by y-websocket
+    request.url = `/${workspaceId}/${fileId}`;
+    
+    yjsWss.handleUpgrade(request, socket, head, (ws) => {
+      yjsWss.emit('connection', ws, request);
+    });
+  }
+  // /sync/workspaceId - File sync notifications
+  else if (pathParts[1] === 'sync' && pathParts.length >= 3) {
+    const workspaceId = pathParts[2];
+    const token = url.searchParams.get('token');
+    
+    if (!workspaceId || !token) {
+      socket.destroy();
+      return;
+    }
+    
+    // Verify JWT token
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      request.user = decoded;
+    } catch (err) {
+      socket.destroy();
+      return;
+    }
+    
+    // Check workspace access
+    const workspace = workspaces.find(w => w.id === workspaceId);
+    if (!workspace || !workspace.members.includes(decoded.id)) {
+      socket.destroy();
+      return;
+    }
+    
+    syncWss.handleUpgrade(request, socket, head, (ws) => {
+      syncWss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+// Setup Yjs WebSocket connections with proper CRDT sync
+// Message types for y-websocket protocol
+const messageSync = 0;
+const messageAwareness = 1;
+
+yjsWss.on('connection', (ws, req) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const roomName = url.pathname.slice(1); // Remove leading /
+  
+  console.log(`✓ Yjs client connected: ${roomName}`);
+  
+  // Get or create Yjs document for this room
+  if (!yjs_docs.has(roomName)) {
+    const Y = require('yjs');
+    yjs_docs.set(roomName, {
+      doc: new Y.Doc(),
+      awareness: new awarenessProtocol.Awareness(new Y.Doc()),
+      clients: new Set()
+    });
+  }
+  
+  const room = yjs_docs.get(roomName);
+  room.clients.add(ws);
+  
+  // Send sync step 1 to new client
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, messageSync);
+  syncProtocol.writeSyncStep1(encoder, room.doc);
+  ws.send(encoding.toUint8Array(encoder));
+  
+  // Send awareness state
+  const awarenessEncoder = encoding.createEncoder();
+  encoding.writeVarUint(awarenessEncoder, messageAwareness);
+  encoding.writeVarUint8Array(awarenessEncoder, awarenessProtocol.encodeAwarenessUpdate(
+    room.awareness,
+    Array.from(room.awareness.getStates().keys())
+  ));
+  ws.send(encoding.toUint8Array(awarenessEncoder));
+  
+  // Handle incoming messages
+  ws.on('message', (message) => {
+    try {
+      const buf = new Uint8Array(message);
+      const decoder = decoding.createDecoder(buf);
+      const messageType = decoding.readVarUint(decoder);
+      
+      if (messageType === messageSync) {
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, messageSync);
+        const syncMessageType = syncProtocol.readSyncMessage(decoder, encoder, room.doc, ws);
+        
+        // If sync step 2 or update, broadcast to all other clients
+        if (syncMessageType === syncProtocol.messageYjsSyncStep2 ||
+            syncMessageType === syncProtocol.messageYjsUpdate) {
+          const update = encoding.toUint8Array(encoder);
+          room.clients.forEach(client => {
+            if (client !== ws && client.readyState === 1) {
+              client.send(update);
+            }
+          });
+        }
+        
+        // Always send response to sender
+        if (encoding.length(encoder) > 1) {
+          ws.send(encoding.toUint8Array(encoder));
+        }
+      }
+      else if (messageType === messageAwareness) {
+        const update = decoding.readVarUint8Array(decoder);
+        awarenessProtocol.applyAwarenessUpdate(room.awareness, update, ws);
+        
+        // Broadcast to all other clients
+        room.clients.forEach(client => {
+          if (client !== ws && client.readyState === 1) {
+            const encoder = encoding.createEncoder();
+            encoding.writeVarUint(encoder, messageAwareness);
+            encoding.writeVarUint8Array(encoder, update);
+            client.send(encoding.toUint8Array(encoder));
+          }
+        });
+      }
+    } catch (err) {
+      console.warn('Yjs message error:', err.message);
+    }
+  });
+  
+  // Listen for document updates
+  const updateHandler = (update, origin) => {
+    if (origin !== ws) {
+      const encoder = encoding.createEncoder();
+      encoding.writeVarUint(encoder, messageSync);
+      syncProtocol.writeUpdate(encoder, update);
+      room.clients.forEach(client => {
+        if (client.readyState === 1) {
+          client.send(encoding.toUint8Array(encoder));
+        }
+      });
+    }
+  };
+  room.doc.on('update', updateHandler);
+  
+  // Listen for awareness updates
+  const awarenessChangeHandler = ({ added, updated, removed }, origin) => {
+    const changedClients = added.concat(updated, removed);
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageAwareness);
+    encoding.writeVarUint8Array(encoder, awarenessProtocol.encodeAwarenessUpdate(
+      room.awareness,
+      changedClients
+    ));
+    const message = encoding.toUint8Array(encoder);
+    room.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(message);
+      }
+    });
+  };
+  room.awareness.on('update', awarenessChangeHandler);
+  
+  ws.on('close', () => {
+    room.clients.delete(ws);
+    console.log(`✓ Yjs client disconnected: ${roomName} (${room.clients.size} remaining)`);
+    
+    // Remove from awareness
+    awarenessProtocol.removeAwarenessStates(room.awareness, [room.doc.clientID], null);
+    
+    // Clean up empty rooms
+    if (room.clients.size === 0) {
+      room.doc.off('update', updateHandler);
+      room.awareness.off('update', awarenessChangeHandler);
+    }
+  });
+});
+
+// Map of room name -> { doc, awareness, clients }
+const yjs_docs = new Map();
+
+// Setup Sync WebSocket connections for file notifications
+syncWss.on('connection', (ws, req) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathParts = url.pathname.split('/');
   const workspaceId = pathParts[2];
-  const fileId = pathParts[3];
-  const token = url.searchParams.get('token');
-
-  if (!workspaceId || !fileId || !token) {
-    console.warn('WebSocket: Missing required parameters');
-    ws.close(1008, 'Missing parameters');
-    return;
-  }
-
-  // Verify token
-  try {
-    jwt.verify(token, JWT_SECRET);
-  } catch (err) {
-    console.warn('WebSocket: Invalid token');
-    ws.close(1008, 'Invalid token');
-    return;
-  }
-
-  const roomId = `${workspaceId}/${fileId}`;
+  const roomId = `sync-${workspaceId}`;
   
   if (!yjs_rooms.has(roomId)) {
     yjs_rooms.set(roomId, new Set());
   }
   yjs_rooms.get(roomId).add(ws);
-
-  console.log(`✓ WebSocket connected: ${roomId} (${yjs_rooms.get(roomId).size} clients)`);
-
-  ws.on('message', (data) => {
-    // Broadcast Yjs updates to all clients in the room
-    const room = yjs_rooms.get(roomId);
-    if (room) {
-      room.forEach(client => {
-        if (client.readyState === 1) { // WebSocket.OPEN
-          try {
-            client.send(data);
-          } catch (err) {
-            console.warn('Error sending message:', err.message);
-          }
-        }
-      });
-    }
-  });
-
+  
+  console.log(`✓ Sync client connected: ${workspaceId} (${yjs_rooms.get(roomId).size} clients)`);
+  
   ws.on('close', () => {
     const room = yjs_rooms.get(roomId);
     if (room) {
       room.delete(ws);
-      console.log(`✓ WebSocket closed: ${roomId} (${room.size} clients remaining)`);
       if (room.size === 0) {
         yjs_rooms.delete(roomId);
       }
     }
   });
-
-  ws.on('error', (err) => {
-    console.warn('WebSocket error:', err.message);
-  });
 });
+
+// Broadcast to sync room
+function broadcastToWorkspace(workspaceId, message) {
+  const roomId = `sync-${workspaceId}`;
+  const room = yjs_rooms.get(roomId);
+  if (room) {
+    const msgStr = JSON.stringify(message);
+    room.forEach(client => {
+      if (client.readyState === 1) {
+        try {
+          client.send(msgStr);
+        } catch (err) {
+          console.warn('Broadcast error:', err.message);
+        }
+      }
+    });
+  }
+}
 
 server.listen(PORT, '0.0.0.0', () => {
   loadDatabase();

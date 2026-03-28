@@ -313,19 +313,7 @@
         renderCollaboratorCursors();
       }
 
-      setInterval(() => {
-        if (!state.activeId || collaborators.length === 0) return;
-        // simulate other collaborator/AI cursor movement
-        const nonLocalUsers = collaborators.filter(c => !c.name.includes('(you)'));
-        if (nonLocalUsers.length === 0) return;
-        const target = nonLocalUsers[Math.floor(Math.random() * nonLocalUsers.length)];
-        const file = state.files.find(f => f.id === state.activeId);
-        if (!file) return;
-        const totalLines = file.code.split('\n').length;
-        target.line = Math.max(1, Math.min(totalLines, target.line + Math.floor(Math.random() * 3) - 1));
-        target.col = Math.max(1, Math.min(80, target.col + Math.floor(Math.random() * 5) - 2));
-        renderCollaboratorCursors();
-      }, 1200);
+      // Real cursor sync is handled by Yjs awareness (see initializeYjsProvider)
 
       let state = { files: [], activeId: null, agents: [{id:'agent-code', name:'Code Assistant'}] };
       let history = {};
@@ -436,7 +424,7 @@
         
         try {
           const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const wsUrl = `${wsProtocol}//${location.host}/yjs/${currentWorkspaceId}/__sync__?token=${authToken}`;
+          const wsUrl = `${wsProtocol}//${location.host}/sync/${currentWorkspaceId}?token=${authToken}`;
           
           syncWs = new WebSocket(wsUrl);
           
