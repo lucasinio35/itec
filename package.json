@@ -11,11 +11,13 @@
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "dockerode": "^4.0.2",
     "@y/websocket-server": "^0.1.5",
+    "dockerode": "^4.0.2",
+    "dotenv": "^16.0.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "ws": "^8.20.0",
     "y-websocket": "^3.0.0",
-    "yjs": "^13.6.30",
-    "dotenv": "^16.0.0"
+    "yjs": "^13.6.30"
   }
 }

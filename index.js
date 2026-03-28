@@ -4,10 +4,82 @@ const fs = require('fs');
 const os = require('os');
 const { spawn } = require('child_process');
 const https = require('https');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3002;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const JWT_SECRET = process.env.JWT_SECRET || 'strong-jwt-secret';
+const JWT_EXPIRES_IN = '2h';
+
+const users = [];
+const workspaces = [];  // {id, name, ownerId, members:[userId]}
+
+const DATABASE_FILE = path.join(__dirname, 'database.json');
+
+function loadDatabase() {
+  try {
+    if (fs.existsSync(DATABASE_FILE)) {
+      const data = fs.readFileSync(DATABASE_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      users.length = 0;
+      users.push(...(parsed.users || []));
+      workspaces.length = 0;
+      workspaces.push(...(parsed.workspaces || []));
+      console.log(`✓ Database loaded: ${users.length} users, ${workspaces.length} workspaces`);
+    } else {
+      console.log('ℹ No database file found, starting fresh');
+    }
+  } catch (err) {
+    console.warn('⚠ Error loading database:', err.message);
+  }
+}
+
+function saveDatabase() {
+  try {
+    const data = JSON.stringify({ users, workspaces }, null, 2);
+    fs.writeFileSync(DATABASE_FILE, data, 'utf8');
+  } catch (err) {
+    console.error('✗ Error saving database:', err.message);
+  }
+}
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function generateToken(user) {
+  return jwt.sign({ id: user.id, username: user.username, email: user.email }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+  });
+}
+
+function authenticateJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authorization header missing or invalid' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload;
+    return next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+function getUserById(id) {
+  return users.find((u) => u.id === id);
+}
+
+function canAccessWorkspace(userId, workspaceId) {
+  const workspace = workspaces.find((w) => w.id === workspaceId);
+  if (!workspace) return false;
+  return workspace.members.includes(userId);
+}
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static('public'));
@@ -71,6 +143,91 @@ app.post('/api/ai', async (req, res) => {
   } catch (err) {
     res.json({ response: `AI Error: ${err.message}` });
   }
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const { username, email, password } = req.body || {};
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'username, email and password are required' });
+  }
+  if (users.some((u) => u.username === username || u.email === email)) {
+    return res.status(409).json({ error: 'User already exists' });
+  }
+  const user = {
+    id: 'user-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+    username,
+    email,
+    password: hashPassword(password)
+  };
+  users.push(user);
+  saveDatabase();
+  const token = generateToken(user);
+  res.json({ message: 'Registered', token, user: { id: user.id, username: user.username, email: user.email } });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) {
+    return res.status(400).json({ error: 'username and password are required' });
+  }
+  const user = users.find((u) => u.username === username || u.email === username);
+  if (!user || user.password !== hashPassword(password)) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  const token = generateToken(user);
+  res.json({ message: 'Logged in', token, user: { id: user.id, username: user.username, email: user.email } });
+});
+
+app.post('/api/workspaces', authenticateJWT, (req, res) => {
+  const { name } = req.body || {};
+  if (!name) {
+    return res.status(400).json({ error: 'Workspace name is required' });
+  }
+  const workspace = {
+    id: 'ws-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+    name,
+    ownerId: req.user.id,
+    members: [req.user.id]
+  };
+  workspaces.push(workspace);
+  saveDatabase();
+  res.json({ message: 'Workspace created', workspace });
+});
+
+app.post('/api/workspaces/:workspaceId/add-member', authenticateJWT, (req, res) => {
+  const { workspaceId } = req.params;
+  const { identifier } = req.body || {}; // username or email
+  if (!identifier) {
+    return res.status(400).json({ error: 'identifier is required' });
+  }
+  const workspace = workspaces.find((w) => w.id === workspaceId);
+  if (!workspace) {
+    return res.status(404).json({ error: 'Workspace not found' });
+  }
+  if (workspace.ownerId !== req.user.id) {
+    return res.status(403).json({ error: 'Only workspace owner can add members' });
+  }
+  const userToAdd = users.find((u) => u.username === identifier || u.email === identifier);
+  if (!userToAdd) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  if (!workspace.members.includes(userToAdd.id)) {
+    workspace.members.push(userToAdd.id);
+    saveDatabase();
+  }
+  res.json({ message: 'Member added', workspace });
+});
+
+app.get('/api/workspaces/:workspaceId', authenticateJWT, (req, res) => {
+  const workspace = workspaces.find((w) => w.id === req.params.workspaceId);
+  if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+  if (!canAccessWorkspace(req.user.id, workspace.id)) return res.status(403).json({ error: 'Forbidden' });
+  res.json({ workspace });
+});
+
+app.get('/api/workspaces', authenticateJWT, (req, res) => {
+  const mine = workspaces.filter((w) => w.members.includes(req.user.id));
+  res.json({ workspaces: mine });
 });
 
 function withTempFile(ext, content) {
@@ -218,15 +375,18 @@ function sanitizeInput(code) {
   return code;
 }
 
-app.post('/api/sandbox/run', async (req, res) => {
-  const { language, code } = req.body || {};
-  if (!language || !code) return res.status(400).json({ error: 'language and code required' });
+app.post('/api/sandbox/run', authenticateJWT, async (req, res) => {
+  const { language, code, workspaceId } = req.body || {};
+  if (!language || !code || !workspaceId) return res.status(400).json({ error: 'language, code and workspaceId are required' });
+  if (!canAccessWorkspace(req.user.id, workspaceId)) {
+    return res.status(403).json({ error: 'User not part of workspace' });
+  }
   const clean = sanitizeInput(code);
   const result = await runCommand(language, clean);
   res.json(result);
 });
 
-app.post('/api/sandbox/run/chain', async (req, res) => {
+app.post('/api/sandbox/run/chain', authenticateJWT, async (req, res) => {
   const { steps } = req.body || {};
   if (!Array.isArray(steps) || !steps.length) {
     return res.status(400).json({ error: 'steps required' });
@@ -261,5 +421,6 @@ app.post('/api/sandbox/run/chain', async (req, res) => {
 });
 
 app.listen(PORT, () => {
+  loadDatabase();
   console.log(`itecify sandbox listening http://localhost:${PORT}`);
 });
