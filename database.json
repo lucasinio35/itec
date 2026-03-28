@@ -5,6 +5,18 @@
       "username": "testuser",
       "email": "test@example.com",
       "password": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f"
+    },
+    {
+      "id": "user-1774692882611-7b620b9e891598",
+      "username": "tudor",
+      "email": "bradstefan21@gmail.com",
+      "password": "df4fb60f8e53f7540cb8a4ddfc1b8dc9a65ff094a152b3548ef6ad1ea481c8c7"
+    },
+    {
+      "id": "user-1774697355673-863943a3b04cf",
+      "username": "Carina",
+      "email": "carina21@gmail.com",
+      "password": "df4fb60f8e53f7540cb8a4ddfc1b8dc9a65ff094a152b3548ef6ad1ea481c8c7"
     }
   ],
   "workspaces": [
@@ -13,7 +25,17 @@
       "name": "Test Workspace",
       "ownerId": "user-1774690032787-d6a9f435f05148",
       "members": [
-        "user-1774690032787-d6a9f435f05148"
+        "user-1774690032787-d6a9f435f05148",
+        "user-1774692882611-7b620b9e891598"
+      ]
+    },
+    {
+      "id": "ws-1774697380201-b1f63bc4b7d618",
+      "name": "Workspace-ul lui tudor",
+      "ownerId": "user-1774692882611-7b620b9e891598",
+      "members": [
+        "user-1774692882611-7b620b9e891598",
+        "user-1774697355673-863943a3b04cf"
       ]
     }
   ]
