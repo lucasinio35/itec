@@ -18,9 +18,11 @@ app.get('/health', (_req, res) => {
 
 app.post('/api/ai', async (req, res) => {
   const prompt = req.body?.prompt || '';
-  
-  if (!OPENAI_API_KEY) {
-    return res.json({ response: 'Error: OPENAI_API_KEY not set. Set environment variable OPENAI_API_KEY to enable AI.\n\nTo get an API key:\n1. Visit https://platform.openai.com/api-keys\n2. Create a new API key\n3. Run: set OPENAI_API_KEY=your_key_here' });
+  // Accept key from env var OR from the browser-sent header (for client-configured keys)
+  const apiKey = OPENAI_API_KEY || req.headers['x-openai-key'] || '';
+
+  if (!apiKey) {
+    return res.json({ response: 'Error: No OpenAI API key configured.\n\nOptions:\n1. Set env var: set OPENAI_API_KEY=sk-...\n2. In the app: open "Code Assistant" → click "🔑 Set OpenAI API Key"' });
   }
 
   const payload = JSON.stringify({
@@ -38,7 +40,7 @@ app.post('/api/ai', async (req, res) => {
     headers: {
       'Content-Type': 'application/json',
       'Content-Length': Buffer.byteLength(payload),
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
+      'Authorization': `Bearer ${apiKey}`
     }
   };
 
@@ -82,14 +84,38 @@ function cleanupPath(filePath) {
   try { fs.unlinkSync(filePath); } catch (err) { /* ignore */ }
 }
 
+const EXEC_TIMEOUT_MS = 10000; // 10 seconds max execution time
+
 function runCommand(lang, code) {
   return new Promise((resolve) => {
     let proc;
     let tempFiles = [];
+    let finished = false;
 
     const done = (err, stdout, stderr, exitCode) => {
+      if (finished) return;
+      finished = true;
       tempFiles.forEach(cleanupPath);
       resolve({ ok: !err && exitCode === 0, stdout, stderr, code: exitCode });
+    };
+
+    const killOnTimeout = (childProc, label) => {
+      return setTimeout(() => {
+        if (!finished) {
+          try { childProc.kill('SIGKILL'); } catch (_) {}
+          done(null, '', `${label} timed out after ${EXEC_TIMEOUT_MS / 1000}s`, 124);
+        }
+      }, EXEC_TIMEOUT_MS);
+    };
+
+    const attachRunProcess = (exePath) => {
+      const run = spawn(exePath, [], { stdio: ['ignore', 'pipe', 'pipe'] });
+      const timer = killOnTimeout(run, 'execution');
+      let out = '', err = '';
+      run.stdout.on('data', d => out += d.toString());
+      run.stderr.on('data', d => err += d.toString());
+      run.on('error', (e) => { clearTimeout(timer); done(e, '', e.message, 500); });
+      run.on('close', (s) => { clearTimeout(timer); done(null, out, err, s); });
     };
 
     if (lang === 'nodejs') {
@@ -98,46 +124,52 @@ function runCommand(lang, code) {
       proc = spawn('python', ['-c', code], { stdio: ['ignore', 'pipe', 'pipe'] });
     } else if (lang === 'rust') {
       const src = withTempFile('rs', code);
-      const exe = withTempFile('exe', '');
+      const exeName = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const exe = path.join(os.tmpdir(), exeName);
       tempFiles.push(src, exe);
+      let compileStderr = '';
       proc = spawn('rustc', [src, '-o', exe], { stdio: ['ignore', 'pipe', 'pipe'] });
+      proc.stderr.on('data', d => compileStderr += d.toString());
+      proc.on('error', (e) => done(e, '', e.message, 500));
       proc.on('close', (status) => {
-        if (status !== 0) return done(null, '', 'rustc failed', status);
-        const run = spawn(exe, [], { stdio: ['ignore', 'pipe', 'pipe'] });
-        let out='', err='';
-        run.stdout.on('data', d=>out+=d.toString());
-        run.stderr.on('data', d=>err+=d.toString());
-        run.on('close', s=>done(null,out,err,s));
+        if (status !== 0) return done(null, '', compileStderr || 'rustc compile failed', status);
+        attachRunProcess(exe);
       });
       return;
     } else if (lang === 'c' || lang === 'cpp') {
       const ext = lang === 'c' ? 'c' : 'cpp';
       const src = withTempFile(ext, code);
-      const exe = withTempFile('exe', '');
+      const exeName = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const exe = path.join(os.tmpdir(), exeName);
       tempFiles.push(src, exe);
       const compiler = lang === 'c' ? 'gcc' : 'g++';
+      let compileStderr = '';
       proc = spawn(compiler, [src, '-o', exe], { stdio: ['ignore', 'pipe', 'pipe'] });
+      proc.stderr.on('data', d => compileStderr += d.toString());
+      proc.on('error', (e) => done(e, '', e.message, 500));
       proc.on('close', (status) => {
-        if (status !== 0) return done(null, '', compiler + ' compile failed', status);
-        const run = spawn(exe, [], { stdio: ['ignore', 'pipe', 'pipe'] });
-        let out='', err='';
-        run.stdout.on('data', d=>out+=d.toString());
-        run.stderr.on('data', d=>err+=d.toString());
-        run.on('close', s=>done(null,out,err,s));
+        if (status !== 0) return done(null, '', compileStderr || `${compiler} compile failed`, status);
+        attachRunProcess(exe);
       });
       return;
     } else if (lang === 'csharp') {
       const src = withTempFile('cs', code);
-      const dll = withTempFile('exe', '');
+      const exeName = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}.exe`;
+      const dll = path.join(os.tmpdir(), exeName);
       tempFiles.push(src, dll);
+      let compileStderr = '';
       proc = spawn('mcs', [src, '-out:' + dll], { stdio: ['ignore', 'pipe', 'pipe'] });
+      proc.stderr.on('data', d => compileStderr += d.toString());
+      proc.on('error', (e) => done(e, '', e.message, 500));
       proc.on('close', (status) => {
-        if (status !== 0) return done(null, '', 'mcs compile failed', status);
+        if (status !== 0) return done(null, '', compileStderr || 'mcs compile failed', status);
         const run = spawn('mono', [dll], { stdio: ['ignore', 'pipe', 'pipe'] });
-        let out='', err='';
-        run.stdout.on('data', d=>out+=d.toString());
-        run.stderr.on('data', d=>err+=d.toString());
-        run.on('close', s=>done(null,out,err,s));
+        const timer = killOnTimeout(run, 'mono execution');
+        let out = '', err = '';
+        run.stdout.on('data', d => out += d.toString());
+        run.stderr.on('data', d => err += d.toString());
+        run.on('error', (e) => { clearTimeout(timer); done(e, '', e.message, 500); });
+        run.on('close', (s) => { clearTimeout(timer); done(null, out, err, s); });
       });
       return;
     } else if (lang === 'html' || lang === 'css') {
@@ -147,10 +179,11 @@ function runCommand(lang, code) {
     }
 
     let stdout = '', stderr = '';
+    const timer = killOnTimeout(proc, lang);
     proc.stdout.on('data', chunk => stdout += chunk.toString());
     proc.stderr.on('data', chunk => stderr += chunk.toString());
-    proc.on('error', (err) => done(err, '', err.message, 500));
-    proc.on('close', (code) => done(null, stdout, stderr, code));
+    proc.on('error', (err) => { clearTimeout(timer); done(err, '', err.message, 500); });
+    proc.on('close', (code) => { clearTimeout(timer); done(null, stdout, stderr, code); });
   });
 }
 

@@ -49,8 +49,12 @@
       .modal-buttons { display:flex; gap:8px; margin-top:16px; }
       .modal-buttons button { flex:1; background:#2a2a2f; border:1px solid #444; color:#eee; border-radius:4px; padding:8px; cursor:pointer; }
       .modal-buttons button:hover { background:#353540; }
-      .file-item input { background:#3a3a45; border:1px solid #5f9cff; color:#eee; padding:4px; font-size:13px; flex:1; }
-      .file-item input:focus { outline:none; border-color:#7fb3ff; }
+      .file-item input { background:#3a3a45; border:1px solid #5f9cff; color:#eee; padding:4px; font-size:13px; flex:1; border-radius:3px; }
+      .file-item input:focus { outline:none; border-color:#7fb3ff; box-shadow:0 0 0 2px rgba(95,156,255,0.2); }
+      .file-item input.error { border-color:#ff6b6b; animation:shake 0.2s ease; }
+      .file-new-hint { font-size:10px; color:#7a8090; padding:2px 8px 6px 8px; }
+      .file-new-hint.err { color:#ff7f7f; }
+      @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
     </style>
   </head>
   <body>
@@ -83,6 +87,10 @@
               <button id="agentPanelSubmitBtn">Get Suggestions</button>
               <button id="agentPanelHideBtn">Hide</button>
             </div>
+            <div style="margin-top:6px;">
+              <button id="agentSetKeyBtn" style="width:100%;background:#1a2a1a;border:1px solid #3a6a3a;color:#8fcf8f;border-radius:4px;padding:5px;font-size:11px;cursor:pointer;">🔑 Set OpenAI API Key</button>
+            </div>
+            <div id="agentKeyStatus" style="font-size:10px;color:#7a8090;padding:3px 0 0 0;"></div>
           </div>
         </aside>
         <section class="editor-wrap">
@@ -137,6 +145,7 @@
       let history = {};
       let isUndoRedo = false;
       let currentAgentId = null;
+      let undoDebounceTimer = null;
 
       function loadState() {
         try {
@@ -169,28 +178,91 @@
           if (file.id === 'temp-new') {
             const input = document.createElement('input');
             input.type = 'text';
-            input.placeholder = 'filename.html';
-            input.value = file.name;
-            input.onkeydown = (e) => {
-              if (e.key === 'Enter') confirmNewFile(input.value);
-            };
-            input.onblur = () => confirmNewFile(input.value);
+            input.id = 'new-file-input';
+            input.placeholder = 'e.g. index.html, main.py, app.js';
+            input.value = file.name; // restore previously typed value from state
+            input.autocomplete = 'off';
+            input.spellcheck = false;
             row.appendChild(input);
+            fileListEl.appendChild(row);
+
+            // Hint line beneath the input
+            const hint = document.createElement('div');
+            hint.className = 'file-new-hint';
+            hint.textContent = 'Extensions: .html .css .js .py .c .cpp .cs .rs';
+            fileListEl.appendChild(hint);
+
+            let confirmed = false;
+
+            const showError = (msg) => {
+              hint.textContent = msg;
+              hint.className = 'file-new-hint err';
+              input.classList.add('error');
+              setTimeout(() => input.classList.remove('error'), 250);
+              input.focus();
+            };
+
+            const tryConfirm = (valueOverride) => {
+              if (confirmed) return;
+              // Use override (from state) or live input value
+              const val = (valueOverride !== undefined ? valueOverride : input.value).trim();
+              if (!val) {
+                confirmed = true;
+                state.files = state.files.filter(f => f.id !== 'temp-new');
+                renderFiles();
+                return;
+              }
+              const ext = val.split('.').pop().toLowerCase();
+              const supported = ['js','mjs','jsx','py','rs','c','cpp','cc','cxx','cs','html','htm','css'];
+              if (!ext || ext === val) {
+                showError('⚠ Add an extension: .html .js .py .cpp .c .cs .rs .css');
+                return;
+              }
+              if (!supported.includes(ext)) {
+                showError(`⚠ Unsupported extension ".${ext}" — use .html .js .py .cpp …`);
+                return;
+              }
+              confirmed = true;
+              confirmNewFile(val);
+            };
+
+            // Persist typed value into state on every keystroke so renderFiles() rebuilds correctly
+            input.oninput = () => {
+              const tempEntry = state.files.find(f => f.id === 'temp-new');
+              if (tempEntry) tempEntry.name = input.value;
+            };
+
+            input.onkeydown = (e) => {
+              if (e.key === 'Enter') { e.preventDefault(); tryConfirm(); }
+              if (e.key === 'Escape') {
+                confirmed = true;
+                state.files = state.files.filter(f => f.id !== 'temp-new');
+                renderFiles();
+              }
+            };
+
+            // On blur: read value from state (in case DOM was rebuilt before blur fired)
+            input.onblur = () => {
+              const tempEntry = state.files.find(f => f.id === 'temp-new');
+              const savedVal = tempEntry ? tempEntry.name : input.value;
+              tryConfirm(savedVal);
+            };
+
+            // Auto-focus after render is complete
+            requestAnimationFrame(() => { const el = document.getElementById('new-file-input'); if (el) el.focus(); });
+            tabBarEl; // no tab for temp-new
           } else {
             const label = document.createElement('span');
             label.textContent = file.name;
             row.appendChild(label);
             row.onclick = () => selectFile(file.id);
-          }
-          if (file.id !== 'temp-new') {
+
             const deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'X';
             deleteBtn.onclick = (e) => { e.stopPropagation(); deleteFile(file.id); };
             row.appendChild(deleteBtn);
-          }
-          fileListEl.appendChild(row);
+            fileListEl.appendChild(row);
 
-          if (file.id !== 'temp-new') {
             const tab = document.createElement('div');
             tab.className = 'tab' + (file.id === state.activeId ? ' active' : '');
             tab.textContent = file.name;
@@ -306,21 +378,25 @@
 
 
 
-      async function runFile(file) {
+      // runFile: returns a string result and optionally sets runOutput.
+      // When called from runAll, setOutput=false so the caller controls the display.
+      async function runFile(file, setOutput = true) {
         if (!file) {
-          runOutput.textContent = 'No file selected.';
-          return;
+          if (setOutput) runOutput.textContent = 'No file selected.';
+          return 'No file selected.';
         }
 
         if (file.language === 'html') {
-          runOutput.innerHTML = '';
-          const iframe = document.createElement('iframe');
-          iframe.style.width = '100%';
-          iframe.style.height = '300px';
-          iframe.style.border = '1px solid #444';
-          iframe.srcdoc = file.code;
-          runOutput.appendChild(iframe);
-          return;
+          if (setOutput) {
+            runOutput.innerHTML = '';
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '300px';
+            iframe.style.border = '1px solid #444';
+            iframe.srcdoc = file.code;
+            runOutput.appendChild(iframe);
+          }
+          return '[HTML rendered in iframe]';
         }
 
         if (file.language === 'css') {
@@ -331,31 +407,31 @@
             document.head.appendChild(styleEl);
           }
           styleEl.textContent = file.code;
-          runOutput.textContent = 'CSS applied to the UI.';
-          return;
+          const msg = 'CSS applied to the UI.';
+          if (setOutput) runOutput.textContent = msg;
+          return msg;
         }
 
         if (file.language === 'nodejs') {
-          runOutput.textContent = 'Running JavaScript...';
           let capture = '';
           const originalLog = console.log;
           const originalError = console.error;
           console.log = (...args) => { capture += args.map(x => String(x)).join(' ') + '\n'; };
           console.error = (...args) => { capture += args.map(x => String(x)).join(' ') + '\n'; };
-
+          let result;
           try {
             new Function(file.code)();
-            runOutput.textContent = capture || 'JavaScript executed successfully (no output).';
+            result = capture || 'JavaScript executed successfully (no output).';
           } catch (err) {
-            runOutput.textContent = 'JavaScript error: ' + err;
+            result = 'JavaScript error: ' + err;
           } finally {
             console.log = originalLog;
             console.error = originalError;
           }
-          return;
+          if (setOutput) runOutput.textContent = result;
+          return result;
         }
 
-        runOutput.textContent = 'Running ' + file.name + '...';
         try {
           const res = await fetch('/api/sandbox/run', {
             method:'POST', headers:{'Content-Type':'application/json'},
@@ -364,14 +440,19 @@
 
           if (!res.ok) {
             const text = await res.text();
-            runOutput.textContent = 'Run failed: ' + res.status + '\n' + text;
-            return;
+            const msg = 'Run failed: ' + res.status + '\n' + text;
+            if (setOutput) runOutput.textContent = msg;
+            return msg;
           }
 
           const data = await res.json();
-          runOutput.textContent = 'exit=' + data.code + '\nstdout:\n' + (data.stdout||'') + '\nstderr:\n' + (data.stderr||'');
+          const msg = 'exit=' + data.code + '\nstdout:\n' + (data.stdout||'') + '\nstderr:\n' + (data.stderr||'');
+          if (setOutput) runOutput.textContent = msg;
+          return msg;
         } catch (err) {
-          runOutput.textContent = 'Run error: ' + err.message;
+          const msg = 'Run error: ' + err.message;
+          if (setOutput) runOutput.textContent = msg;
+          return msg;
         }
       }
 
@@ -394,8 +475,9 @@
           fullOutput += '\n=== ' + file.name + ' (' + file.language + ') ===\n';
           runOutput.textContent = fullOutput;
 
-          await runFile(file);
-          fullOutput += runOutput.textContent + '\n';
+          // Pass setOutput=false so runFile doesn't clobber our accumulated log
+          const fileResult = await runFile(file, false);
+          fullOutput += (fileResult || '') + '\n';
           runOutput.textContent = fullOutput;
           await new Promise(resolve => setTimeout(resolve, 50));
         }
@@ -413,9 +495,14 @@
         suggestionsEl.textContent = 'Thinking...';
         runOutput.textContent = 'AI is processing your prompt...';
         try {
+          const headers = { 'Content-Type': 'application/json' };
+          // Attach browser-stored key as a header if present
+          const localKey = localStorage.getItem('itecify-openai-key');
+          if (localKey) headers['x-openai-key'] = localKey;
+
           const res = await fetch('/api/ai', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
+            method: 'POST',
+            headers,
             body: JSON.stringify({ prompt })
           });
           if (!res.ok) {
@@ -435,6 +522,27 @@
       agentPanelSubmitBtn.onclick = () => sendAIPrompt(agentPanelPrompt.value, agentPanelSuggestions);
       agentPanelHideBtn.onclick = hideAgentPanel;
 
+      // In-browser API key management
+      const agentSetKeyBtn = document.getElementById('agentSetKeyBtn');
+      const agentKeyStatus = document.getElementById('agentKeyStatus');
+      function refreshKeyStatus() {
+        const k = localStorage.getItem('itecify-openai-key');
+        agentKeyStatus.textContent = k ? '✓ API key saved (local)' : 'No key saved — AI will use server env var';
+        agentKeyStatus.style.color = k ? '#8fcf8f' : '#7a8090';
+      }
+      agentSetKeyBtn.onclick = () => {
+        const existing = localStorage.getItem('itecify-openai-key') || '';
+        const key = window.prompt('Paste your OpenAI API key (sk-...):\nThis is stored only in your browser localStorage.', existing);
+        if (key === null) return; // cancelled
+        if (!key.trim()) {
+          localStorage.removeItem('itecify-openai-key');
+        } else {
+          localStorage.setItem('itecify-openai-key', key.trim());
+        }
+        refreshKeyStatus();
+      };
+      refreshKeyStatus();
+
       function confirmNewFile(name) {
         if (!name || !name.trim()) {
           state.files = state.files.filter(f => f.id !== 'temp-new');
@@ -442,11 +550,6 @@
           return;
         }
         const trimmed = name.trim();
-        const ext = trimmed.split('.').pop().toLowerCase();
-        if (!ext || ext === trimmed) {
-          alert('File must have an extension (e.g., .cpp, .c, .py, .js, .html, .css, .rs, .cs)');
-          return;
-        }
         const lang = getLanguageFromExtension(trimmed);
         const template = TEMPLATES[lang] || '';
         state.files = state.files.filter(f => f.id !== 'temp-new');
@@ -455,17 +558,14 @@
 
       // Button handlers
       document.getElementById('newFileBtn').onclick = () => {
-        const name = window.prompt('Enter new filename with extension:\n.cpp, .c, .py, .js, .html, .css, .rs, .cs', 'new-file.cpp');
-        if (!name) return;
-        const trimmed = name.trim();
-        const ext = trimmed.split('.').pop().toLowerCase();
-        if (!ext || ext === trimmed) {
-          alert('File must have an extension (e.g., .cpp, .c, .py, .js, .html, .css, .rs, .cs)');
+        // If a temp-new entry already exists, just focus it
+        if (state.files.find(f => f.id === 'temp-new')) {
+          const el = document.getElementById('new-file-input');
+          if (el) el.focus();
           return;
         }
-        const lang = getLanguageFromExtension(trimmed);
-        const template = TEMPLATES[lang] || '';
-        createFile(trimmed, lang, template);
+        state.files.push({ id: 'temp-new', name: '', language: 'nodejs', code: '' });
+        renderFiles();
       };
 
       document.getElementById('importFileBtn').onclick = () => fileUpload.click();
@@ -481,11 +581,14 @@
         if (!file) return;
         const blob = new Blob([file.code], { type:'text/plain;charset=utf-8' });
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
+        const objectUrl = URL.createObjectURL(blob);
+        a.href = objectUrl;
         a.download = file.name;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        // Revoke the object URL to free memory
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
       };
 
       document.getElementById('runActiveBtn').onclick = runActive;
@@ -497,11 +600,18 @@
         if (!state.activeId) return;
         const file = getActiveFile();
         if (!file) return;
-        if (!isUndoRedo) {
-          history[file.id].undo.push(file.code);
-          history[file.id].redo = [];
-        }
+        const previousCode = file.code;
         file.code = codeEditor.value;
+        if (!isUndoRedo) {
+          // Debounce undo history pushes to avoid one entry per keystroke
+          clearTimeout(undoDebounceTimer);
+          undoDebounceTimer = setTimeout(() => {
+            if (previousCode !== file.code) {
+              history[file.id].undo.push(previousCode);
+              history[file.id].redo = [];
+            }
+          }, 500);
+        }
         saveState();
       });
 
