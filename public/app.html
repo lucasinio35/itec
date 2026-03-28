@@ -1,690 +1,486 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>iTECify IDE</title>
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
-      body { margin: 0; font-family: Segoe UI, Roboto, Arial, sans-serif; background: #1e1e1e; color: #cccccc; }
-
-      .app {
-        height: 100vh;
-        display: grid;
-        grid-template-columns: 48px 260px 1fr;
-        grid-template-rows: 34px 1fr 240px;
-        grid-template-areas:
-          "title title title"
-          "activity sidebar editor"
-          "activity sidebar terminal";
-      }
-
-      .titlebar {
-        grid-area: title;
-        display: flex;
-        align-items: center;
-        padding: 0 12px;
-        background: #323233;
-        border-bottom: 1px solid #2a2a2a;
-        color: #e6e6e6;
-        font-size: 12px;
-      }
-
-      .activity {
-        grid-area: activity;
-        background: #333333;
-        border-right: 1px solid #2a2a2a;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        padding-top: 8px;
-      }
-      .activity .dot { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #4a4a4a; background: #2a2a2a; }
-
-      .sidebar {
-        grid-area: sidebar;
-        background: #252526;
-        border-right: 1px solid #2a2a2a;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-      }
-
-      .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #9d9d9d; padding: 10px 12px; }
-      .file {
-        width: 100%;
-        border: 0;
-        text-align: left;
-        background: transparent;
-        color: #cccccc;
-        padding: 7px 12px;
-        cursor: pointer;
-        font-size: 13px;
-      }
-      .file.active { background: #37373d; }
-
-      .editor { grid-area: editor; display: flex; flex-direction: column; min-width: 0; background: #1e1e1e; }
-      .tabbar { height: 36px; background: #2d2d2d; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; }
-      .tab { padding: 8px 12px; font-size: 12px; border-right: 1px solid #2a2a2a; background: #1e1e1e; color: #fff; }
-
-      .editorWrap { position: relative; flex: 1; min-height: 0; }
-      textarea {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        border: 0;
-        outline: 0;
-        resize: none;
-        padding: 14px;
-        font-family: Consolas, Monaco, monospace;
-        font-size: 13px;
-        line-height: 1.5;
-        white-space: pre;
-        overflow: auto;
-      }
-
-      .cursorLayer { position: absolute; inset: 0; pointer-events: none; }
-      .remoteCursor { position: absolute; width: 2px; height: 20px; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); }
-      .remoteLabel {
-        position: absolute;
-        transform: translateY(-16px);
-        font-size: 11px;
-        background: rgba(0,0,0,0.55);
-        border: 1px solid rgba(255,255,255,0.12);
-        padding: 1px 6px;
-        border-radius: 999px;
-        color: #fff;
-        white-space: nowrap;
-        pointer-events: none;
-      }
-
-      .blocksPanel {
-        border-top: 1px solid #2a2a2a;
-        background: #202020;
-        padding: 10px;
-        max-height: 220px;
-        overflow: auto;
-      }
-      .blocksTitle { font-size: 12px; color: #9d9d9d; margin-bottom: 8px; }
-      .blockCard { border: 1px solid #2a2a2a; background: #1a1a1a; border-radius: 8px; padding: 8px; margin-bottom: 10px; }
-      .blockHead { display: flex; align-items: center; gap: 8px; }
-      .blockHead .meta { font-size: 12px; color: #ddd; }
-      .blockHead select { padding: 4px 6px; font-size: 12px; }
-      .blockHead button { padding: 4px 8px; font-size: 12px; cursor: pointer; }
-      .blockContent {
-        margin-top: 8px;
-        width: 100%;
-        min-height: 90px;
-        background: #141414;
-        color: #d4d4d4;
-        border: 1px solid #2a2a2a;
-        border-radius: 6px;
-        padding: 8px;
-        font-family: Consolas, Monaco, monospace;
-        font-size: 12px;
-        line-height: 1.5;
-      }
-      .blockContent { resize: vertical; min-height: 80px; }
-
-      .terminal { grid-area: terminal; display: flex; flex-direction: column; border-top: 1px solid #2a2a2a; background: #181818; }
-      .term-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid #2a2a2a; background: #1f1f1f; }
-      .status { margin-left: auto; font-size: 12px; color: #9d9d9d; }
-      button, select { background: #2f2f2f; color: #dddddd; border: 1px solid #4a4a4a; border-radius: 4px; padding: 5px 8px; font-size: 12px; }
-      .checks { display: flex; gap: 8px; flex-wrap: wrap; }
-      .checks label { font-size: 12px; color: #c8c8c8; }
-
-      #terminalOut { flex: 1; margin: 0; padding: 10px; overflow: auto; white-space: pre-wrap; font-family: Consolas, Monaco, monospace; font-size: 12px; color: #d4d4d4; }
+      body { margin:0; font-family: Segoe UI, Roboto, Arial, sans-serif; background:#1e1e1e; color:#ddd; min-height:100vh; }
+      .container { display:grid; grid-template-rows:auto 1fr; height:100vh; }
+      .top { background:#252526; border-bottom:1px solid #333; padding:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+      .top h1 { margin:0; font-size:16px; color:#fff; }
+      .top .controls { display:inline-flex; gap:8px; flex-wrap:wrap; }
+      .top button, .top select, .top input { background:#2a2a2f; border:1px solid #444; color:#eee; border-radius:4px; padding:5px 8px; font-size:13px; cursor:pointer; }
+      .top button:hover, .top select:hover { background:#353540; }
+      .main { display:grid; grid-template-columns:220px 1fr; min-height:0; }
+      .sidebar { background:#20202a; border-right:1px solid #333; display:flex; flex-direction:column; min-height:0; }
+      .panel-title { font-size:11px; color:#a0a7b0; text-transform:uppercase; padding:8px; border-bottom:1px solid #333; margin:0; }
+      .file-list, .agent-list { overflow:auto; padding:6px; flex:1; }
+      .file-item, .agent-item { background:#2b2c33; color:#e1e1e1; margin-bottom:6px; border-radius:4px; border:1px solid #3c3d46; padding:6px 8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; font-size:13px; }
+      .file-item span, .agent-item span { flex:1; }
+      .file-item button, .agent-item button { background:#3a3a40; border:1px solid #555; color:#ccc; border-radius:3px; padding:2px 6px; font-size:11px; cursor:pointer; }
+      .file-item button:hover, .agent-item button:hover { background:#454550; }
+      .file-item.active, .agent-item.active { border-color:#5f9cff; background:#32354e; }
+      .editor-wrap { display:flex; flex-direction:column; min-height:0; }
+      .tabbar { background:#1f1f24; display:flex; border-bottom:1px solid #333; }
+      .tab { cursor:pointer; color:#ccc; padding:8px 10px; font-size:13px; border-right:1px solid #2f2f3b; }
+      .tab:hover { background:#2a2a33; }
+      .tab.active { background:#2c2f45; color:#fff; border-bottom:3px solid #5f9cff; }
+      #codeEditor { flex:1; width:100%; height:100%; border:none; outline:none; background:#11131a; color:#e8ebff; padding:12px; resize:none; font-family:Consolas, Monaco, monospace; font-size:13px; line-height:1.45; }
+      .status { background:#16171f; border-top:1px solid #333; color:#9da5b8; padding:6px 10px; display:flex; justify-content:space-between; font-size:12px; }
+      .output { background:#101118; color:#c8d0e0; border-top:1px solid #333; padding:10px; font-family:Consolas, Monaco, monospace; font-size:12px; overflow:auto; height:170px; white-space:pre-wrap; }
+      .hidden { display:none; }
+      .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:1000; }
+      .modal { background:#1e1e1e; border:1px solid #444; border-radius:8px; padding:20px; width:90%; max-width:600px; max-height:80vh; overflow:auto; }
+      .modal h2 { margin-top:0; color:#fff; }
+      .modal-prompt { margin:12px 0; }
+      .modal-prompt label { display:block; margin-bottom:6px; font-size:13px; color:#a0a7b0; }
+      .modal-prompt textarea { width:100%; height:80px; background:#2a2a2f; border:1px solid #444; border-radius:4px; color:#eee; padding:8px; font-family:Consolas, Monaco, monospace; font-size:12px; resize:vertical; }
+      .modal-suggestions { background:#2a2a2f; border:1px solid #444; border-radius:4px; padding:10px; margin:12px 0; max-height:250px; overflow:auto; color:#c8d0e0; font-size:12px; white-space:pre-wrap; }
+      .modal-buttons { display:flex; gap:8px; margin-top:16px; }
+      .modal-buttons button { flex:1; background:#2a2a2f; border:1px solid #444; color:#eee; border-radius:4px; padding:8px; cursor:pointer; }
+      .modal-buttons button:hover { background:#353540; }
+      .file-item input { background:#3a3a45; border:1px solid #5f9cff; color:#eee; padding:4px; font-size:13px; flex:1; }
+      .file-item input:focus { outline:none; border-color:#7fb3ff; }
     </style>
   </head>
-
   <body>
-    <div class="app">
-      <div class="titlebar">iTECify IDE</div>
-      <aside class="activity">
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-      </aside>
-      <aside class="sidebar">
-        <div class="section-title">Explorer</div>
-        <div id="files"></div>
-      </aside>
-
-      <section class="editor">
-        <div class="tabbar"><div class="tab" id="activeTab">—</div></div>
-        <div class="editorWrap">
+    <div class="container">
+      <div class="top">
+        <h1>iTECify IDE</h1>
+        <div class="controls">
+          <select id="langSelect" title="Set language for active file">
+            <option value="nodejs">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="rust">Rust</option>
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="csharp">C#</option>
+          </select>
+          <button id="newFileBtn">New File</button>
+          <button id="importFileBtn">Import</button>
+          <input id="fileUpload" type="file" class="hidden" />
+          <button id="saveFileBtn">Save</button>
+          <button id="downloadFileBtn">Download</button>
+          <button id="runActiveBtn">Run Active</button>
+          <button id="runAllBtn">Run All</button>
+          <button id="undoBtn">Undo</button>
+          <button id="redoBtn">Redo</button>
+        </div>
+      </div>
+      <div class="main">
+        <aside class="sidebar">
+          <div class="panel-title">Files</div>
+          <div class="file-list" id="fileList"></div>
+          <div class="panel-title">AI Agents</div>
+          <div class="agent-list" id="agentList"></div>
+        </aside>
+        <section class="editor-wrap">
+          <div class="tabbar" id="tabBar"></div>
           <textarea id="codeEditor" spellcheck="false"></textarea>
-          <div class="cursorLayer" id="cursorLayer"></div>
-        </div>
-        <div class="blocksPanel">
-          <div class="blocksTitle">AI Blocks (editable)</div>
-          <div id="blocks"></div>
-          <div style="margin-top:10px;color:#9d9d9d;font-size:12px;">
-            Shortcut: <code style="background:#2a2a2a;border:1px solid #3a3a3a;padding:2px 6px;border-radius:6px;">Ctrl+Enter</code> wraps selection into a pending block.
-          </div>
-        </div>
-      </section>
-
-      <section class="terminal">
-        <div class="term-head">
-          <strong style="font-size: 12px;">TERMINAL</strong>
-          <button id="runChain">Run Selected</button>
-          <button id="stopBtn" disabled>Stop</button>
-          <button id="clearTerminal">Clear</button>
-          <select id="timeoutMs">
-            <option value="30000">30s</option>
-            <option value="10000">10s</option>
-            <option value="60000">60s</option>
-          </select>
-          <select id="memoryBytes">
-            <option value="134217728">128MB</option>
-            <option value="268435456">256MB</option>
-            <option value="67108864">64MB</option>
-          </select>
-          <select id="nanoCpus">
-            <option value="1000000000">1 CPU</option>
-            <option value="500000000">0.5 CPU</option>
-            <option value="2000000000">2 CPU</option>
-          </select>
-          <div class="checks">
-            <label><input type="checkbox" data-lang="nodejs" checked />js</label>
-            <label><input type="checkbox" data-lang="python" checked />py</label>
-            <label><input type="checkbox" data-lang="rust" checked />rs</label>
-            <label><input type="checkbox" data-lang="c" checked />c</label>
-            <label><input type="checkbox" data-lang="cpp" checked />cpp</label>
-            <label><input type="checkbox" data-lang="csharp" checked />c#</label>
-          </div>
-          <span class="status" id="status">idle</span>
-        </div>
-        <pre id="terminalOut"></pre>
-      </section>
+          <div class="status"><span id="statusFile">No file selected</span><span id="cursorPos">Ln 1, Col 1</span></div>
+          <div class="output" id="runOutput">Output will appear here.</div>
+        </section>
+      </div>
     </div>
 
-    <script type="module">
-      import * as Y from "https://unpkg.com/yjs?module";
-      import { WebsocketProvider } from "https://unpkg.com/y-websocket?module";
+    <div id="aiModal" class="modal-overlay hidden">
+      <div class="modal">
+        <h2>AI Code Assistant</h2>
+        <div class="modal-prompt">
+          <label>Your Prompt:</label>
+          <textarea id="aiPrompt" placeholder="Ask me to improve the code, add features, fix bugs, etc."></textarea>
+        </div>
+        <div class="modal-prompt">
+          <label>Suggestions:</label>
+          <div class="modal-suggestions" id="aiSuggestions">Suggestions will appear here...</div>
+        </div>
+        <div class="modal-buttons">
+          <button id="aiSubmitBtn">Get Suggestions</button>
+          <button id="aiCloseBtn">Close</button>
+        </div>
+      </div>
+    </div>
 
-      const editorEl = document.getElementById("codeEditor");
-      const cursorLayerEl = document.getElementById("cursorLayer");
-      const filesEl = document.getElementById("files");
-      const blocksEl = document.getElementById("blocks");
-      const activeTabEl = document.getElementById("activeTab");
-
-      const outEl = document.getElementById("terminalOut");
-      const statusEl = document.getElementById("status");
-      const stopBtn = document.getElementById("stopBtn");
-
-      function setStatus(v) { statusEl.textContent = v; }
-      function appendOut(text) { outEl.textContent += text; outEl.scrollTop = outEl.scrollHeight; }
-
-      const FILES = [
-        { id: "nodejs", name: "main.js", language: "nodejs" },
-        { id: "python", name: "main.py", language: "python" },
-        { id: "rust", name: "main.rs", language: "rust" },
-        { id: "c", name: "main.c", language: "c" },
-        { id: "cpp", name: "main.cpp", language: "cpp" },
-        { id: "csharp", name: "main.cs", language: "csharp" },
+    <script>
+      const STORAGE_KEY = 'itecify-ide-state';
+      const DEFAULT_FILES = [
+        { id:'file-js', name:'main.js', language:'nodejs', code:'// Hello from JavaScript\nconsole.log("Hello, World!");\n' },
+        { id:'file-py', name:'main.py', language:'python', code:'# Hello from Python\nprint("Hello, World!")\n' }
       ];
-
-      const SNIPPETS = {
-        nodejs: 'console.log("nodejs: hello");\n',
-        python: 'print("python: hello")\n',
-        rust: 'fn main() {\n    println!("rust: hello");\n}\n',
-        c: '#include <stdio.h>\nint main(void){\n  printf("c: hello\\n");\n  return 0;\n}\n',
-        cpp: '#include <iostream>\nint main(){\n  std::cout << "cpp: hello\\n";\n  return 0;\n}\n',
-        csharp: 'using System;\nclass Program {\n  static void Main() {\n    Console.WriteLine("csharp: hello");\n  }\n}\n',
+      const TEMPLATES = {
+        nodejs:'// Hello from JavaScript\nconsole.log("Hello, World!");\n',
+        python:'# Hello from Python\nprint("Hello, World!")\n',
+        rust:'// Hello from Rust\nfn main() {\n  println!("Hello, World!");\n}\n',
+        c:'#include <stdio.h>\n// Hello from C\nint main() { printf("Hello, World!\\n"); return 0; }\n',
+        cpp:'#include <iostream>\n// Hello from C++\nint main() { std::cout << "Hello, World!\\n"; return 0; }\n',
+        csharp:'using System;\n// Hello from C#\nclass Program { static void Main() { Console.WriteLine("Hello, World!"); } }\n',
+        html:'<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>Hello</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n</body>\n</html>\n',
+        css:'/* Hello from CSS */\nbody { background: #1e1e1e; color: #ddd; font-family: Arial, sans-serif; }\n'
       };
 
-      const room = new URLSearchParams(location.search).get("room") || "default-room";
-      const wsHost = location.hostname || "localhost";
-      const providerUrl = `ws://${wsHost}:1234`;
+      const fileUpload = document.getElementById('fileUpload');
+      const fileListEl = document.getElementById('fileList');
+      const tabBarEl = document.getElementById('tabBar');
+      const codeEditor = document.getElementById('codeEditor');
+      const statusFile = document.getElementById('statusFile');
+      const cursorPos = document.getElementById('cursorPos');
+      const runOutput = document.getElementById('runOutput');
+      const langSelect = document.getElementById('langSelect');
+      const agentListEl = document.getElementById('agentList');
 
-      const myName = "user-" + Math.floor(Math.random() * 10000);
-      const myColor = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
+      let state = { files: [], activeId: null, agents: [] };
+      let history = {};
+      let isUndoRedo = false;
 
-      let activeId = "nodejs";
-      let controller = null;
-
-      // ----------------------------
-      // Yjs + Awareness
-      // ----------------------------
-      const doc = new Y.Doc();
-      const provider = new WebsocketProvider(providerUrl, room, doc);
-      const awareness = provider.awareness;
-
-      const ytexts = new Map();
-      for (const f of FILES) ytexts.set(f.id, doc.getText(f.id));
-
-      const initMap = doc.getMap("init");
-      if (!initMap.get("seeded")) {
-        initMap.set("seeded", true);
-        for (const f of FILES) {
-          const t = ytexts.get(f.id);
-          if (t.length === 0) t.insert(0, SNIPPETS[f.id] || "");
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) state = JSON.parse(raw);
+        } catch (e) {
+          console.warn('load state failed', e);
         }
+        if (!Array.isArray(state.files) || !state.files.length) {
+          state.files = DEFAULT_FILES.map(f => ({...f}));
+          state.activeId = state.files[0].id;
+        }
+        if (!state.activeId && state.files.length) state.activeId = state.files[0].id;
+        state.files.forEach((file) => { if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; });
       }
 
-      awareness.setLocalStateField("user", { name: myName, color: myColor });
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
 
-      // ----------------------------
-      // Explorer
-      // ----------------------------
-      for (const f of FILES) {
-        const btn = document.createElement("button");
-        btn.className = "file" + (f.id === activeId ? " active" : "");
-        btn.textContent = f.name;
-        btn.onclick = () => {
-          activeId = f.id;
-          for (const b of Array.from(filesEl.querySelectorAll("button.file"))) {
-            b.classList.toggle("active", b.textContent === f.name);
+      function renderFiles() {
+        fileListEl.innerHTML = '';
+        tabBarEl.innerHTML = '';
+        state.files.forEach(file => {
+          const row = document.createElement('div');
+          row.className = 'file-item' + (file.id === state.activeId ? ' active' : '');
+          if (file.id === 'temp-new') {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'filename.html';
+            input.value = file.name;
+            input.onkeydown = (e) => {
+              if (e.key === 'Enter') confirmNewFile(input.value);
+            };
+            input.onblur = () => confirmNewFile(input.value);
+            row.appendChild(input);
+          } else {
+            const label = document.createElement('span');
+            label.textContent = file.name + ' (' + file.language + ')';
+            row.appendChild(label);
+            row.onclick = () => selectFile(file.id);
           }
-          editorEl.value = ytexts.get(activeId).toString();
-          activeTabEl.textContent = f.name;
-          renderBlocks();
-          renderRemoteCursors();
-        };
-        filesEl.appendChild(btn);
-      }
+          if (file.id !== 'temp-new') {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'X';
+            deleteBtn.onclick = (e) => { e.stopPropagation(); deleteFile(file.id); };
+            row.appendChild(deleteBtn);
+          }
+          fileListEl.appendChild(row);
 
-      activeTabEl.textContent = FILES.find((x) => x.id === activeId).name;
-      editorEl.value = ytexts.get(activeId).toString();
-      renderBlocks();
-
-      // ----------------------------
-      // Multi-cursor (awareness)
-      // ----------------------------
-      function getCursorState() {
-        return { anchor: editorEl.selectionStart, head: editorEl.selectionEnd };
-      }
-
-      function updateLocalCursor() {
-        const st = getCursorState();
-        awareness.setLocalStateField("cursor", { fileId: activeId, ...st, color: myColor, name: myName });
-      }
-
-      editorEl.addEventListener("keyup", updateLocalCursor);
-      editorEl.addEventListener("click", updateLocalCursor);
-      editorEl.addEventListener("select", updateLocalCursor);
-      document.addEventListener("selectionchange", () => {
-        if (document.activeElement === editorEl) updateLocalCursor();
-      });
-      updateLocalCursor();
-
-      // ----------------------------
-      // Editor binding <-> CRDT
-      // ----------------------------
-      let applyingRemote = false;
-      editorEl.addEventListener("input", () => {
-        if (applyingRemote) return;
-        const t = ytexts.get(activeId);
-        t.doc.transact(() => {
-          t.delete(0, t.length);
-          t.insert(0, editorEl.value);
-        });
-        renderBlocks();
-        updateLocalCursor();
-      });
-
-      for (const [fileId, t] of ytexts.entries()) {
-        t.observe(() => {
-          if (fileId !== activeId) return;
-          applyingRemote = true;
-          editorEl.value = t.toString();
-          applyingRemote = false;
-          renderBlocks();
-          renderRemoteCursors();
+          if (file.id !== 'temp-new') {
+            const tab = document.createElement('div');
+            tab.className = 'tab' + (file.id === state.activeId ? ' active' : '');
+            tab.textContent = file.name;
+            tab.onclick = () => selectFile(file.id);
+            tabBarEl.appendChild(tab);
+          }
         });
       }
 
-      // ----------------------------
-      // Cursor overlay geometry
-      // ----------------------------
-      let geometry = null;
-      function measureGeometry() {
-        if (geometry) return geometry;
-        const style = getComputedStyle(editorEl);
-        const paddingLeft = parseFloat(style.paddingLeft) || 0;
-        const paddingTop = parseFloat(style.paddingTop) || 0;
-        const font = style.font;
-        const fontSize = parseFloat(style.fontSize) || 13;
-        const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.5;
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        ctx.font = font;
-        const charWidth = ctx.measureText("M").width || 8;
-        geometry = { paddingLeft, paddingTop, lineHeight, charWidth };
-        return geometry;
-      }
-
-      function caretToRowCol(text, pos) {
-        const before = text.slice(0, pos);
-        const lines = before.split("\n");
-        return { row: Math.max(0, lines.length - 1), col: lines[lines.length - 1].length };
-      }
-
-      function renderRemoteCursors() {
-        cursorLayerEl.innerHTML = "";
-        const geo = measureGeometry();
-        const text = editorEl.value;
-
-        const scrollLeft = editorEl.scrollLeft;
-        const scrollTop = editorEl.scrollTop;
-
-        const states = awareness.getStates();
-        for (const [clientId, st] of states.entries()) {
-          if (clientId === doc.clientID) continue;
-          const cur = st.cursor;
-          if (!cur || cur.fileId !== activeId) continue;
-
-          const pos = typeof cur.head === "number" ? cur.head : cur.anchor;
-          const { row, col } = caretToRowCol(text, pos);
-
-          const left = geo.paddingLeft + col * geo.charWidth - scrollLeft;
-          const top = geo.paddingTop + row * geo.lineHeight - scrollTop;
-
-          const cursor = document.createElement("div");
-          cursor.className = "remoteCursor";
-          cursor.style.left = left + "px";
-          cursor.style.top = top + "px";
-          cursor.style.background = cur.color || "#fff";
-          cursorLayerEl.appendChild(cursor);
-
-          const label = document.createElement("div");
-          label.className = "remoteLabel";
-          label.style.left = left + "px";
-          label.style.top = top + "px";
-          label.style.borderColor = "rgba(255,255,255,0.18)";
-          label.textContent = cur.name || "peer";
-          cursorLayerEl.appendChild(label);
-        }
-      }
-
-      awareness.on("change", renderRemoteCursors);
-
-      // ----------------------------
-      // Block markers (Notion-like: editable + accept/reject)
-      // ----------------------------
-      const START_PREFIX = "//__AI_BLOCK_START__:";
-      const END_PREFIX = "//__AI_BLOCK_END__:";
-
-      function blockHeader(id, lang, status) {
-        return `//__AI_BLOCK_START__:${id}:${lang}:${status}`;
-      }
-
-      function parseBlocks(code) {
-        const blocks = [];
-        let idx = 0;
-
-        while (idx < code.length) {
-          const startPos = code.indexOf(START_PREFIX, idx);
-          if (startPos === -1) break;
-
-          const lineEnd = code.indexOf("\n", startPos);
-          if (lineEnd === -1) break;
-
-          const headerLine = code.slice(startPos, lineEnd).trim();
-          const parts = headerLine.split(":");
-          if (parts.length < 5) { idx = lineEnd + 1; continue; }
-
-          const id = parts[1];
-          const lang = parts[2];
-          const status = parts[3] || "pending";
-
-          const endMarker = `${END_PREFIX}${id}`;
-          const contentStart = lineEnd + 1;
-          const endPos = code.indexOf(endMarker, contentStart);
-          if (endPos === -1) break;
-
-          const endLineStart = endPos;
-          const endLineEnd = (() => {
-            const nl = code.indexOf("\n", endLineStart);
-            return nl === -1 ? endLineStart + endMarker.length : nl + 1;
-          })();
-
-          const content = code.slice(contentStart, endLineStart);
-          blocks.push({
-            id,
-            lang,
-            status,
-            startLineStart: startPos,
-            startLineEnd: lineEnd + 1,
-            contentStart,
-            contentEnd: endLineStart,
-            endLineEnd,
-            content,
-          });
-
-          idx = endLineEnd;
-        }
-
-        return blocks;
-      }
-
-      function updateEditorCode(newCode) {
-        const t = ytexts.get(activeId);
-        applyingRemote = true;
-        t.doc.transact(() => {
-          t.delete(0, t.length);
-          t.insert(0, newCode);
+      function renderAgents() {
+        agentListEl.innerHTML = '';
+        state.agents.forEach(agent => {
+          const row = document.createElement('div');
+          row.className = 'agent-item';
+          const label = document.createElement('span');
+          label.textContent = agent.name;
+          row.appendChild(label);
+          const openBtn = document.createElement('button');
+          openBtn.textContent = 'Open';
+          openBtn.onclick = (e) => { e.stopPropagation(); alert('AI Agent: ' + agent.name + ' (stub)'); };
+          row.appendChild(openBtn);
+          agentListEl.appendChild(row);
         });
-        applyingRemote = false;
       }
 
-      function renderBlocks() {
-        const code = editorEl.value;
-        const blocks = parseBlocks(code);
-        blocksEl.innerHTML = "";
+      function getActiveFile() { return state.files.find(f => f.id === state.activeId); }
 
-        if (blocks.length === 0) {
-          blocksEl.innerHTML = `<div style="color:#9d9d9d;font-size:12px;">No blocks detected.</div>`;
-          return;
-        }
+      function selectFile(fileId) {
+        const file = state.files.find(f => f.id === fileId);
+        if (!file) return;
+        flushCurrentFile();
+        state.activeId = file.id;
+        codeEditor.value = file.code;
+        statusFile.textContent = file.name + ' [' + file.language + ']';
+        langSelect.value = file.language;
+        renderFiles();
+        updateCursor();
+        saveState();
+      }
 
-        for (const b of blocks) {
-          const card = document.createElement("div");
-          card.className = "blockCard";
-
-          const head = document.createElement("div");
-          head.className = "blockHead";
-
-          const meta = document.createElement("div");
-          meta.className = "meta";
-          meta.textContent = `${b.lang} • ${b.id}`;
-
-          const select = document.createElement("select");
-          for (const s of ["pending", "accepted", "rejected"]) {
-            const opt = document.createElement("option");
-            opt.value = s;
-            opt.textContent = s;
-            if (s === b.status) opt.selected = true;
-            select.appendChild(opt);
-          }
-
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "Reject+remove";
-
-          select.onchange = () => {
-            const newHeader = `${blockHeader(b.id, b.lang, select.value)}\n`;
-            const before = code.slice(0, b.startLineStart);
-            const after = code.slice(b.startLineEnd);
-            updateEditorCode(before + newHeader + after);
-          };
-
-          delBtn.onclick = () => {
-            const before = code.slice(0, b.startLineStart);
-            const after = code.slice(b.endLineEnd);
-            updateEditorCode(before + after);
-          };
-
-          head.appendChild(meta);
-          head.appendChild(select);
-          head.appendChild(delBtn);
-
-          const contentArea = document.createElement("textarea");
-          contentArea.className = "blockContent";
-          contentArea.value = b.content;
-          contentArea.onblur = () => {
-            const newContent = contentArea.value;
-            const before = code.slice(0, b.contentStart);
-            const after = code.slice(b.contentEnd);
-            updateEditorCode(before + newContent + after);
-          };
-
-          card.appendChild(head);
-          card.appendChild(contentArea);
-          blocksEl.appendChild(card);
+      function flushCurrentFile() {
+        const file = getActiveFile();
+        if (!file) return;
+        if (file.code !== codeEditor.value) {
+          history[file.id].undo.push(file.code);
+          history[file.id].redo = [];
+          file.code = codeEditor.value;
         }
       }
 
-      function insertBlockForActiveFile() {
-        const code = editorEl.value;
-        const start = editorEl.selectionStart;
-        const end = editorEl.selectionEnd;
-
-        if (start === end) {
-          appendOut("[insertBlock] Select some text first.\n");
-          return;
-        }
-
-        const selected = code.slice(start, end);
-        const id = "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-        const lang = activeId;
-        const status = "pending";
-
-        const startLine = `${blockHeader(id, lang, status)}\n`;
-        const endLine = `${END_PREFIX}${id}\n`;
-
-        const before = code.slice(0, start);
-        const after = code.slice(end);
-        const newCode = before + startLine + selected + "\n" + endLine + after;
-
-        updateEditorCode(newCode);
+      function createFile(name, language, initialCode) {
+        const id = 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        const file = { id, name, language, code: initialCode };
+        state.files.push(file);
+        if (!history[id]) history[id] = {undo: [], redo: []};
+        selectFile(id);
+        saveState();
       }
 
-      document.addEventListener("keydown", (e) => {
-        if (e.ctrlKey && e.key === "Enter") {
-          e.preventDefault();
-          insertBlockForActiveFile();
-        }
-      });
-
-      // ----------------------------
-      // Terminal: run selected languages in one shared stream
-      // ----------------------------
-      function parseSSEChunk(raw, onEvent) {
-        const blocks = raw.split("\n\n");
-        for (const b of blocks) {
-          if (!b.trim()) continue;
-          const lines = b.split("\n");
-          let ev = "message";
-          let data = "";
-          for (const line of lines) {
-            if (line.startsWith("event:")) ev = line.slice(6).trim();
-            if (line.startsWith("data:")) data = line.slice(5).trim();
-          }
-          if (!data) continue;
-          onEvent(ev, JSON.parse(data));
-        }
+      function deleteFile(id) {
+        if (state.files.length <= 1) { alert('Keep at least one file.'); return; }
+        state.files = state.files.filter(f => f.id !== id);
+        delete history[id];
+        if (state.activeId === id) state.activeId = state.files[0].id;
+        saveState();
+        renderFiles();
+        selectFile(state.activeId);
       }
 
-      function getCodeForLanguage(lang) {
-        const t = ytexts.get(lang);
-        return t ? t.toString() : "";
+      function undo() {
+        const file = getActiveFile();
+        if (!file || !history[file.id] || !history[file.id].undo.length) return;
+        history[file.id].redo.push(file.code);
+        file.code = history[file.id].undo.pop();
+        isUndoRedo = true;
+        codeEditor.value = file.code;
+        isUndoRedo = false;
+        saveState();
       }
 
-      async function runChain() {
-        const selected = Array.from(document.querySelectorAll("input[type=checkbox][data-lang]:checked"))
-          .map((el) => el.getAttribute("data-lang"));
+      function redo() {
+        const file = getActiveFile();
+        if (!file || !history[file.id] || !history[file.id].redo.length) return;
+        history[file.id].undo.push(file.code);
+        file.code = history[file.id].redo.pop();
+        isUndoRedo = true;
+        codeEditor.value = file.code;
+        isUndoRedo = false;
+        saveState();
+      }
 
-        const steps = selected.map((lang) => ({
-          language: lang,
-          code: getCodeForLanguage(lang),
-          fileName: lang,
-        }));
+      function updateCursor() {
+        const pos = codeEditor.selectionStart;
+        const lines = codeEditor.value.slice(0, pos).split('\n');
+        cursorPos.textContent = 'Ln ' + lines.length + ', Col ' + (lines[lines.length - 1].length + 1);
+      }
 
-        if (!steps.length) {
-          appendOut("[select at least one language]\n");
-          return;
-        }
+      function changeLanguage() {
+        const file = getActiveFile();
+        if (!file) return;
+        file.language = langSelect.value;
+        saveState();
+        renderFiles();
+        statusFile.textContent = file.name + ' [' + file.language + ']';
+      }
 
-        setStatus("running");
-        stopBtn.disabled = false;
-        controller = new AbortController();
-        appendOut("\n$ running chain: " + steps.map((s) => s.language).join(" -> ") + "\n");
-
-        const payload = {
-          steps,
-          timeoutMs: Number(document.getElementById("timeoutMs").value),
-          memoryBytes: Number(document.getElementById("memoryBytes").value),
-          nanoCpus: Number(document.getElementById("nanoCpus").value),
-        };
+      async function runActive() {
+        const file = getActiveFile();
+        if (!file) return;
+        flushCurrentFile();
+        runOutput.textContent = 'Running ' + file.name + '...';
 
         try {
-          const res = await fetch("/api/sandbox/run/chain", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            signal: controller.signal,
+          const res = await fetch('/api/sandbox/run', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ language:file.language, code:file.code })
           });
 
           if (!res.ok) {
-            appendOut((await res.text()) + "\n");
-            setStatus("error");
+            const text = await res.text();
+            runOutput.textContent = 'Run failed: ' + res.status + '\n' + text;
             return;
           }
 
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder("utf-8");
-          let pending = "";
+          const data = await res.json();
+          runOutput.textContent = 'exit=' + data.code + '\nstdout:\n' + (data.stdout||'') + '\nstderr:\n' + (data.stderr||'');
+        } catch (err) {
+          runOutput.textContent = 'Run error: ' + err.message;
+        }
+      }
+
+      async function runAll() {
+        flushCurrentFile();
+        runOutput.textContent = 'Running all files in chain...';
+
+        const steps = state.files.map(f => ({ language:f.language, code:f.code, fileName:f.name }));
+
+        const popup = window.open('', '_blank', 'width=840,height=620,resizable=yes,scrollbars=yes');
+        if (!popup) { alert('Allow popups.'); return; }
+
+        popup.document.write('<!doctype html><html><head><title>Run output</title><style>body{background:#111;color:#e6e6e6;font-family:monospace; padding:8px;}#out{white-space:pre-wrap;}</style></head><body><h3>Run Log</h3><div id="out">Starting...</div></body></html>');
+        popup.document.close();
+
+        try {
+          const response = await fetch('/api/sandbox/run/chain', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ steps }) });
+          if (!response.ok) {
+            const text = await response.text();
+            popup.document.getElementById('out').textContent = 'Error: ' + text;
+            return;
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let buffer = '';
 
           while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-            pending += decoder.decode(value, { stream: true });
-            const end = pending.lastIndexOf("\n\n");
-            if (end < 0) continue;
-            const chunk = pending.slice(0, end + 2);
-            pending = pending.slice(end + 2);
-
-            parseSSEChunk(chunk, (event, data) => {
-              if (event === "step-start") appendOut("\n# [" + data.label + "] start\n");
-              else if (event === "chunk") appendOut(data.text || "");
-              else if (event === "step-done") appendOut("\n# [" + data.label + "] exit " + data.exitCode + "\n");
-              else if (event === "error") {
-                appendOut("\n! " + (data.message || data.error || "error") + "\n");
-                setStatus(data.code || "error");
-              } else if (event === "done") {
-                appendOut("\n$ done\n");
-                setStatus(data.ok ? "done" : "failed");
+            buffer += decoder.decode(value, { stream:true });
+            let cut;
+            while ((cut = buffer.indexOf('\n\n')) !== -1) {
+              const chunk = buffer.slice(0, cut).trim();
+              buffer = buffer.slice(cut + 2);
+              if (!chunk) continue;
+              const lines = chunk.split('\n');
+              let event = 'message';
+              let data = '';
+              for (const line of lines) {
+                if (line.startsWith('event:')) event = line.slice(6).trim();
+                if (line.startsWith('data:')) data = line.slice(5).trim();
               }
-            });
+              if (!data) continue;
+              try {
+                const parsed = JSON.parse(data);
+                const out = popup.document.getElementById('out');
+                if (event === 'chunk') out.textContent += parsed.text || '';
+                else if (event === 'step-start') out.textContent += '\n\n=== ' + (parsed.label || parsed.language) + ' started\n';
+                else if (event === 'step-done') out.textContent += '\n--- ' + (parsed.label || parsed.language) + ' exit ' + parsed.exitCode + ' \n';
+                else if (event === 'done') out.textContent += '\n=== chain completed\n';
+              } catch (err) { console.warn('parse event', err); }
+            }
           }
+          runOutput.textContent = 'Run chain complete (see popup window).';
         } catch (err) {
-          if (err.name === "AbortError") {
-            appendOut("\n$ aborted\n");
-            setStatus("aborted");
-          } else {
-            appendOut("\n! " + String(err) + "\n");
-            setStatus("error");
-          }
-        } finally {
-          controller = null;
-          stopBtn.disabled = true;
+          runOutput.textContent = 'Run error: ' + err.message;
+          if (popup && !popup.closed) popup.document.getElementById('out').textContent = 'Error: ' + err.message;
         }
       }
 
-      document.getElementById("runChain").onclick = runChain;
-      stopBtn.onclick = () => controller && controller.abort();
-      document.getElementById("clearTerminal").onclick = () => { outEl.textContent = ""; };
+      function confirmNewFile(name) {
+        if (!name || !name.trim()) {
+          // Remove temp file if empty
+          state.files = state.files.filter(f => f.id !== 'temp-new');
+          renderFiles();
+          return;
+        }
+        const trimmed = name.trim();
+        const ext = trimmed.split('.').pop().toLowerCase();
+        if (!['html', 'css', 'js'].includes(ext)) {
+          alert('File must have .html, .css, or .js extension');
+          return;
+        }
+        const lang = ext === 'js' ? 'nodejs' : ext;
+        const template = TEMPLATES[lang] || '';
+        // Remove temp file and create real one
+        state.files = state.files.filter(f => f.id !== 'temp-new');
+        createFile(trimmed, lang, template);
+      }
 
-      // Initial render
-      renderRemoteCursors();
+      // Button handlers
+      document.getElementById('newFileBtn').onclick = () => {
+        // Create temp file for inline naming
+        state.files.push({ id: 'temp-new', name: '', language: 'html', code: '' });
+        renderFiles();
+        // Focus the input
+        const input = fileListEl.querySelector('input');
+        if (input) input.focus();
+      };
+
+      document.getElementById('importFileBtn').onclick = () => fileUpload.click();
+
+      document.getElementById('saveFileBtn').onclick = () => {
+        flushCurrentFile();
+        saveState();
+        runOutput.textContent = 'Saved';
+      };
+
+      document.getElementById('downloadFileBtn').onclick = () => {
+        const file = getActiveFile();
+        if (!file) return;
+        const blob = new Blob([file.code], { type:'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+
+      document.getElementById('runActiveBtn').onclick = runActive;
+      document.getElementById('runAllBtn').onclick = runAll;
+      document.getElementById('undoBtn').onclick = undo;
+      document.getElementById('redoBtn').onclick = redo;
+
+      langSelect.onchange = changeLanguage;
+
+      codeEditor.addEventListener('input', () => {
+        if (!state.activeId) return;
+        const file = getActiveFile();
+        if (!file) return;
+        if (!isUndoRedo) {
+          history[file.id].undo.push(file.code);
+          history[file.id].redo = [];
+        }
+        file.code = codeEditor.value;
+        saveState();
+      });
+
+      codeEditor.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+          e.preventDefault();
+          flushCurrentFile();
+          saveState();
+          runOutput.textContent = 'Saved';
+        }
+        if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+          e.preventDefault();
+          undo();
+        }
+        if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+          e.preventDefault();
+          redo();
+        }
+      });
+
+      codeEditor.addEventListener('click', updateCursor);
+      codeEditor.addEventListener('keyup', updateCursor);
+
+      fileUpload.addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const ext = (file.name.split('.').pop() || '').toLowerCase();
+          const mapLang = { js:'nodejs', py:'python', rs:'rust', c:'c', cpp:'cpp', cs:'csharp' };
+          createFile(file.name, mapLang[ext] || 'nodejs', String(reader.result || ''));
+          event.target.value = '';
+        };
+        reader.readAsText(file);
+      });
+
+      // Initialize app
+      loadState();
+      renderFiles();
+      renderAgents();
+      if (state.activeId) selectFile(state.activeId);
     </script>
   </body>
 </html>
-

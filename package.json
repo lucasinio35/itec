@@ -1,7 +1,7 @@
 {
   "name": "itecify",
   "version": "0.1.0",
-  "description": "iTECify — sandbox backend",
+  "description": "iTECify sandbox",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -11,10 +11,11 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@y/websocket-server": "^0.1.5",
-    "dockerode": "^4.0.2",
     "express": "^4.21.2",
+    "dockerode": "^4.0.2",
+    "@y/websocket-server": "^0.1.5",
     "y-websocket": "^3.0.0",
-    "yjs": "^13.6.30"
+    "yjs": "^13.6.30",
+    "dotenv": "^16.0.0"
   }
 }
