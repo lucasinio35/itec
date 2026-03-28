@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+<<<<<<< Updated upstream
   <title>iTECify - Login</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -164,10 +165,401 @@
       border: 1px solid #f44;
       color: #ff8888;
       display: block;
+=======
+  <title>iTECify Engine</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: rgba(15, 23, 39, 0.78);
+      --panel-strong: rgba(15, 23, 39, 0.92);
+      --line: rgba(136, 166, 214, 0.22);
+      --text: #eef4ff;
+      --muted: #9eb0cc;
+      --accent: #64b5ff;
+      --accent-2: #8bffcf;
+      --danger: #ff9a9a;
+      --success: #98e2ab;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(100, 181, 255, 0.2), transparent 32%),
+        radial-gradient(circle at top right, rgba(139, 255, 207, 0.14), transparent 28%),
+        linear-gradient(160deg, #09101c 0%, #10192a 45%, #08111a 100%);
+    }
+    .page {
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+    .grid-glow {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95), rgba(0,0,0,0.25));
+      pointer-events: none;
+    }
+    .content {
+      position: relative;
+      z-index: 1;
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+      transition: filter 0.25s ease;
+    }
+    .content.blurred {
+      filter: blur(12px) saturate(0.75);
+      pointer-events: none;
+      user-select: none;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 34px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #2d5dff);
+      box-shadow: 0 10px 24px rgba(77, 149, 255, 0.35);
+    }
+    .brand-copy h1 {
+      font-size: 24px;
+      margin-bottom: 3px;
+    }
+    .brand-copy p {
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .nav-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button, a.button-link {
+      border: 1px solid rgba(142, 176, 221, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 11px 18px;
+      cursor: pointer;
+      font-size: 13px;
+      text-decoration: none;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+    button:hover, a.button-link:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(142, 176, 221, 0.3);
+    }
+    .primary {
+      background: linear-gradient(135deg, var(--accent), #2d76ff);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 14px 30px rgba(59, 129, 255, 0.3);
+    }
+    .primary:hover {
+      background: linear-gradient(135deg, #7cc7ff, #4988ff);
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(320px, 420px);
+      gap: 28px;
+      align-items: stretch;
+    }
+    .hero-copy {
+      padding: 28px 8px 0 0;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #cae5ff;
+      background: rgba(255,255,255,0.04);
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+    .hero-copy h2 {
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 0.97;
+      margin-bottom: 18px;
+      max-width: 10ch;
+    }
+    .hero-copy h2 span {
+      color: var(--accent-2);
+    }
+    .hero-copy p {
+      max-width: 620px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.65;
+      margin-bottom: 28px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .hero-actions .hero-continue {
+      padding: 15px 28px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 18px;
+      min-width: 260px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 640px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      backdrop-filter: blur(10px);
+    }
+    .stat-card strong {
+      display: block;
+      font-size: 28px;
+      margin-bottom: 4px;
+    }
+    .stat-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .preview {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 20px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(18px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .preview-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .traffic {
+      display: flex;
+      gap: 7px;
+    }
+    .traffic span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: block;
+    }
+    .traffic span:nth-child(1) { background: #ff7f7f; }
+    .traffic span:nth-child(2) { background: #ffd66d; }
+    .traffic span:nth-child(3) { background: #7ae1a8; }
+    .terminal {
+      background: rgba(4, 8, 16, 0.85);
+      border: 1px solid rgba(128, 164, 222, 0.16);
+      border-radius: 18px;
+      padding: 16px;
+      min-height: 230px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #d8e7ff;
+      white-space: pre-wrap;
+    }
+    .terminal .ok { color: #95efac; }
+    .terminal .info { color: #8bd0ff; }
+    .feature-strip {
+      margin-top: 42px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .feature {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+    }
+    .feature h3 {
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+    .feature p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .auth-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 12, 20, 0.42);
+      backdrop-filter: blur(10px);
+      z-index: 20;
+      padding: 20px;
+    }
+    .auth-modal.open {
+      display: flex;
+    }
+    .modal-card {
+      width: min(460px, 100%);
+      background: var(--panel-strong);
+      border: 1px solid rgba(136, 166, 214, 0.22);
+      border-radius: 26px;
+      padding: 26px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .modal-head h3 {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+    .modal-head p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .group {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 12px;
+      color: #b3c4df;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(136, 166, 214, 0.18);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 14px;
+    }
+    input:focus {
+      outline: none;
+      border-color: rgba(100, 181, 255, 0.72);
+      box-shadow: 0 0 0 3px rgba(100, 181, 255, 0.12);
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .row button {
+      flex: 1;
+      border-radius: 14px;
+    }
+    .status {
+      display: none;
+      margin-top: 14px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      text-align: center;
+    }
+    .status.error {
+      display: block;
+      color: var(--danger);
+      background: rgba(160, 30, 30, 0.18);
+      border: 1px solid rgba(255, 104, 104, 0.34);
+    }
+    .status.success {
+      display: block;
+      color: var(--success);
+      background: rgba(40, 120, 40, 0.16);
+      border: 1px solid rgba(92, 199, 111, 0.28);
+    }
+    .switch-line {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .switch-line a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    @media (max-width: 960px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+      .hero-copy {
+        padding-top: 0;
+      }
+      .feature-strip {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 680px) {
+      .stats {
+        grid-template-columns: 1fr;
+      }
+      .nav {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .nav-actions {
+        width: 100%;
+      }
+      .nav-actions button, .nav-actions a {
+        flex: 1;
+        text-align: center;
+      }
+>>>>>>> Stashed changes
     }
   </style>
 </head>
 <body>
+<<<<<<< Updated upstream
   <div class="container">
     <div class="logo-box">
       <h1>iTECify</h1>
@@ -218,12 +610,134 @@
         <div class="status" id="registerStatus"></div>
         <div class="toggle-text">
           Already have an account? <button id="switchToLogin">Login here</button>
+=======
+  <div class="page">
+    <div class="grid-glow"></div>
+    <div id="mainContent" class="content">
+      <div class="nav">
+        <div class="brand">
+          <div class="brand-mark"></div>
+          <div class="brand-copy">
+            <h1>iTECify Engine</h1>
+            <p>Build, Run, Share</p>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <button id="accountBtn" type="button">Account</button>
+          <button id="heroLoginBtn" class="primary" type="button">Register</button>
+        </div>
+      </div>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">Realtime coding workspace for your engine projects</div>
+          <h2>Launch your <span>engine workspace</span> from one clean home base.</h2>
+          <p>iTECify brings your editor, account, collaborators, AI tools, previews, and project memory together in one place so your engine feels like a real platform instead of a loose set of pages.</p>
+          <div class="hero-actions">
+            <button id="heroSecondaryLoginBtn" class="primary hero-continue" type="button">Continue To Editor</button>
+          </div>
+          <div class="stats">
+            <div class="stat-card">
+              <strong>Monaco</strong>
+              <span>Modern code editing with project-level persistence.</span>
+            </div>
+            <div class="stat-card">
+              <strong>AI</strong>
+              <span>Built-in assistant flow ready for prompts and coding help.</span>
+            </div>
+            <div class="stat-card">
+              <strong>Teams</strong>
+              <span>Projects, collaborators, account tracking, and previews.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview">
+          <div class="preview-top">
+            <div class="traffic"><span></span><span></span><span></span></div>
+            <div>engine://workspace/boot</div>
+          </div>
+          <div class="terminal">$ itecify engine start
+<span class="info">[workspace]</span> loading account + projects
+<span class="info">[editor]</span> monaco ready
+<span class="info">[preview]</span> html popup runtime online
+<span class="ok">[ok]</span> project memory restored
+<span class="ok">[ok]</span> collaborators synced
+<span class="ok">[ready]</span> waiting for login...</div>
+        </div>
+      </section>
+
+      <section class="feature-strip">
+        <div class="feature">
+          <h3>Project-centered</h3>
+          <p>Keep each workspace separate, preserve files between refreshes, and jump back into exactly the project you were working on.</p>
+        </div>
+        <div class="feature">
+          <h3>Built for experiments</h3>
+          <p>Run code, preview HTML in a popup window, and keep your editor layout stable while you test ideas quickly.</p>
+        </div>
+        <div class="feature">
+          <h3>Account-first engine</h3>
+          <p>Profiles, collaborators, time tracking, and system panels make the engine feel like a real product instead of a bare login screen.</p>
+        </div>
+      </section>
+    </div>
+
+    <div id="authModal" class="auth-modal">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <h3 id="authTitle">Create Account</h3>
+            <p id="authSubtitle">Set up your iTECify workspace and start building.</p>
+          </div>
+          <button id="closeAuthBtn" class="icon-btn" type="button">x</button>
+        </div>
+
+        <div id="loginForm" style="display:none;">
+          <div class="group">
+            <label for="loginUsername">Username Or Email</label>
+            <input id="loginUsername" type="text" placeholder="your-username">
+          </div>
+          <div class="group">
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" type="password" placeholder="password">
+          </div>
+          <div class="row">
+            <button id="loginBtn" class="primary" type="button">Login</button>
+          </div>
+          <div id="loginStatus" class="status"></div>
+        </div>
+
+        <div id="registerForm">
+          <div class="group">
+            <label for="registerUsername">Username</label>
+            <input id="registerUsername" type="text" placeholder="choose-username">
+          </div>
+          <div class="group">
+            <label for="registerEmail">Email</label>
+            <input id="registerEmail" type="email" placeholder="you@example.com">
+          </div>
+          <div class="group">
+            <label for="registerPassword">Password</label>
+            <input id="registerPassword" type="password" placeholder="password">
+          </div>
+          <div class="group">
+            <label for="registerPasswordConfirm">Confirm Password</label>
+            <input id="registerPasswordConfirm" type="password" placeholder="confirm password">
+          </div>
+          <div class="row">
+            <button id="registerBtn" class="primary" type="button">Create Account</button>
+          </div>
+          <div id="registerStatus" class="status"></div>
+          <div class="switch-line">Already have an account? <a href="#" id="showLoginLink">Login</a></div>
+>>>>>>> Stashed changes
         </div>
       </div>
     </div>
   </div>
 
   <script>
+<<<<<<< Updated upstream
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const loginBtn = document.getElementById('loginBtn');
@@ -274,12 +788,149 @@
       loginBtn.disabled = true;
       loginBtn.textContent = 'Logging in...';
 
+=======
+    const mainContent = document.getElementById('mainContent');
+    const authModal = document.getElementById('authModal');
+    const authTitle = document.getElementById('authTitle');
+    const authSubtitle = document.getElementById('authSubtitle');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const loginStatus = document.getElementById('loginStatus');
+    const registerStatus = document.getElementById('registerStatus');
+    const accountBtn = document.getElementById('accountBtn');
+    const heroLoginBtn = document.getElementById('heroLoginBtn');
+    const heroSecondaryLoginBtn = document.getElementById('heroSecondaryLoginBtn');
+    const closeAuthBtn = document.getElementById('closeAuthBtn');
+    let authRequiredForEditor = false;
+
+    function setStatus(el, type, message) {
+      el.className = 'status ' + type;
+      el.textContent = message;
+    }
+
+    function clearStatuses() {
+      loginStatus.className = 'status';
+      loginStatus.textContent = '';
+      registerStatus.className = 'status';
+      registerStatus.textContent = '';
+    }
+
+    function syncAuthModalState() {
+      closeAuthBtn.style.display = authRequiredForEditor ? 'none' : 'inline-flex';
+    }
+
+    function openModal() {
+      syncAuthModalState();
+      authModal.classList.add('open');
+      mainContent.classList.add('blurred');
+    }
+
+    function closeModal() {
+      if (authRequiredForEditor) return;
+      authModal.classList.remove('open');
+      mainContent.classList.remove('blurred');
+      clearStatuses();
+    }
+
+    function showLogin() {
+      authRequiredForEditor = false;
+      authTitle.textContent = 'Welcome Back';
+      authSubtitle.textContent = 'Log in to return to your projects and editor.';
+      loginForm.style.display = 'block';
+      registerForm.style.display = 'none';
+      clearStatuses();
+      openModal();
+    }
+
+    function showRegister() {
+      authRequiredForEditor = false;
+      authTitle.textContent = 'Create Account';
+      authSubtitle.textContent = 'Set up your iTECify workspace and start building.';
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'block';
+      clearStatuses();
+      openModal();
+    }
+
+    function persistAuth(data) {
+      localStorage.setItem('itecify-auth-token', data.token);
+      localStorage.setItem('itecify-current-user', JSON.stringify(data.user));
+    }
+
+    function requireAuthForEditor(mode) {
+      authRequiredForEditor = true;
+      if (mode === 'login') {
+        authTitle.textContent = 'Login Required';
+        authSubtitle.textContent = 'Log in before continuing to the editor.';
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+      } else {
+        authTitle.textContent = 'Register Required';
+        authSubtitle.textContent = 'Create an account before continuing to the editor.';
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+      }
+      clearStatuses();
+      openModal();
+    }
+
+    function updateHomepageActions() {
+      const hasToken = !!localStorage.getItem('itecify-auth-token');
+      const hasKnownUser = !!localStorage.getItem('itecify-current-user');
+
+      accountBtn.onclick = () => {
+        if (hasToken) {
+          window.location.href = '/account.html';
+          return;
+        }
+        showLogin();
+      };
+
+      if (hasToken) {
+        heroLoginBtn.textContent = 'Login';
+        heroSecondaryLoginBtn.textContent = 'Continue To Editor';
+        heroLoginBtn.onclick = showLogin;
+        heroSecondaryLoginBtn.onclick = () => { window.location.href = '/app.html'; };
+        return;
+      }
+
+      heroLoginBtn.textContent = hasKnownUser ? 'Login' : 'Register';
+      heroLoginBtn.onclick = hasKnownUser ? showLogin : showRegister;
+      heroSecondaryLoginBtn.textContent = 'Continue To Editor';
+      heroSecondaryLoginBtn.onclick = () => requireAuthForEditor(hasKnownUser ? 'login' : 'register');
+    }
+
+    document.getElementById('showLoginLink').onclick = (event) => {
+      event.preventDefault();
+      showLogin();
+    };
+    closeAuthBtn.onclick = closeModal;
+
+    authModal.onclick = (event) => {
+      if (event.target === authModal && !authRequiredForEditor) closeModal();
+    };
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && authModal.classList.contains('open') && !authRequiredForEditor) {
+        closeModal();
+      }
+    });
+
+    document.getElementById('loginBtn').onclick = async () => {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      if (!username || !password) {
+        setStatus(loginStatus, 'error', 'Please enter both username and password.');
+        return;
+      }
+>>>>>>> Stashed changes
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
+<<<<<<< Updated upstream
 
         const data = await res.json();
 
@@ -335,12 +986,41 @@
       registerBtn.disabled = true;
       registerBtn.textContent = 'Registering...';
 
+=======
+        const data = await res.json();
+        if (!res.ok) {
+          setStatus(loginStatus, 'error', data.error || 'Login failed.');
+          return;
+        }
+        persistAuth(data);
+        setStatus(loginStatus, 'success', 'Login successful. Redirecting...');
+        setTimeout(() => { window.location.href = '/app.html'; }, 350);
+      } catch (err) {
+        setStatus(loginStatus, 'error', 'Connection error: ' + err.message);
+      }
+    };
+
+    document.getElementById('registerBtn').onclick = async () => {
+      const username = document.getElementById('registerUsername').value.trim();
+      const email = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+      const confirm = document.getElementById('registerPasswordConfirm').value;
+      if (!username || !email || !password || !confirm) {
+        setStatus(registerStatus, 'error', 'Please fill in all fields.');
+        return;
+      }
+      if (password !== confirm) {
+        setStatus(registerStatus, 'error', 'Passwords do not match.');
+        return;
+      }
+>>>>>>> Stashed changes
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, password })
         });
+<<<<<<< Updated upstream
 
         const data = await res.json();
 
@@ -387,6 +1067,22 @@
         }
       });
     });
+=======
+        const data = await res.json();
+        if (!res.ok) {
+          setStatus(registerStatus, 'error', data.error || 'Registration failed.');
+          return;
+        }
+        persistAuth(data);
+        setStatus(registerStatus, 'success', 'Account created. Redirecting...');
+        setTimeout(() => { window.location.href = '/app.html'; }, 350);
+      } catch (err) {
+        setStatus(registerStatus, 'error', 'Connection error: ' + err.message);
+      }
+    };
+
+    updateHomepageActions();
+>>>>>>> Stashed changes
   </script>
 </body>
 </html>

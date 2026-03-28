@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>iTECify Account</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Segoe UI, Arial, sans-serif;
+        background: radial-gradient(circle at top, #2f3958 0%, #1a1d29 48%, #10131c 100%);
+        color: #e7ebf5;
+      }
+      .page {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 28px 20px 40px;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 26px;
+      }
+      .topbar-left {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .topbar h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      .topbar button {
+        background: #25314d;
+        border: 1px solid #4d648f;
+        color: #eef4ff;
+        border-radius: 6px;
+        padding: 9px 14px;
+        cursor: pointer;
+      }
+      .topbar-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 18px;
+      }
+      .avatar-wrap {
+        display: flex;
+        justify-content: flex-start;
+        margin: 0;
+      }
+      .avatar-button {
+        width: 128px;
+        height: 128px;
+        border-radius: 999px;
+        border: 3px solid rgba(255, 255, 255, 0.22);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+        overflow: hidden;
+        cursor: pointer;
+        background: #36527c;
+        color: #f5f8ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 34px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .avatar-button img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .avatar-button span {
+        pointer-events: none;
+      }
+      .avatar-note {
+        margin-top: 10px;
+        text-align: center;
+        font-size: 12px;
+        color: #95a0b8;
+      }
+      .card {
+        background: rgba(20, 25, 38, 0.9);
+        border: 1px solid #2d3958;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      }
+      .span-full {
+        grid-column: 1 / -1;
+      }
+      .card h2 {
+        margin: 0 0 14px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #9fb2d8;
+      }
+      .field {
+        margin-bottom: 14px;
+      }
+      .label {
+        font-size: 12px;
+        color: #8ea0c6;
+        margin-bottom: 4px;
+      }
+      .value {
+        font-size: 16px;
+        color: #f3f6ff;
+        word-break: break-word;
+      }
+      .stat {
+        font-size: 30px;
+        font-weight: 700;
+        color: #9ed0ff;
+      }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .metric-tile {
+        background: #151c2b;
+        border: 1px solid #2b3550;
+        border-radius: 10px;
+        padding: 12px;
+      }
+      .metric-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #8ea0c6;
+        margin-bottom: 6px;
+      }
+      .metric-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: #f3f6ff;
+      }
+      .metric-note {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #95a0b8;
+      }
+      .subtle {
+        color: #95a0b8;
+        font-size: 13px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .card-head h2 {
+        margin: 0;
+      }
+      .small-btn {
+        background: #22314f;
+        border: 1px solid #47618d;
+        color: #eef4ff;
+        border-radius: 7px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .small-btn:hover {
+        background: #2b3c61;
+      }
+      .project-btn {
+        width: 100%;
+        text-align: left;
+        background: #1d2740;
+        border: 1px solid #355184;
+        color: #ecf2ff;
+        border-radius: 8px;
+        padding: 12px 14px;
+        cursor: pointer;
+      }
+      .project-btn:hover {
+        background: #243153;
+      }
+      .collab-item {
+        border: 1px solid #2b3550;
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #151c2b;
+      }
+      .collab-item strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .status {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #8fb9ff;
+      }
+      .empty {
+        color: #95a0b8;
+        font-size: 13px;
+      }
+      @media (max-width: 760px) {
+        .layout { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h1>Account</h1>
+          <div class="avatar-wrap">
+            <div>
+              <button id="avatarButton" class="avatar-button" type="button" title="Choose profile picture">
+                <span id="avatarFallback">?</span>
+                <img id="avatarImage" alt="Profile picture" style="display:none;" />
+              </button>
+              <input id="avatarInput" type="file" accept="image/*" style="display:none;" />
+              <div class="avatar-note" style="text-align:left;">Click the circle to add or change your profile photo.</div>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button id="homepageBtn">Homepage</button>
+          <button id="backBtn">Back To Editor</button>
+        </div>
+      </div>
+
+      <div class="layout">
+        <div class="card">
+          <h2>Profile</h2>
+          <div class="field">
+            <div class="label">Username</div>
+            <div id="usernameValue" class="value">Loading...</div>
+          </div>
+          <div class="field">
+            <div class="label">Email</div>
+            <div id="emailValue" class="value">Loading...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Total Time</h2>
+          <div id="timeValue" class="stat">0m</div>
+          <div class="subtle">Tracked across your visits on this device.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Projects</h2>
+          </div>
+          <div id="projectsList" class="stack"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Collaborators</h2>
+            <button id="addCollaboratorBtn" class="small-btn">Add Collaborator</button>
+          </div>
+          <div id="collaboratorsList" class="stack"></div>
+          <div id="collaboratorStatus" class="status"></div>
+        </div>
+
+        <div class="card span-full">
+          <h2>System Stats</h2>
+          <div class="metrics-grid">
+            <div class="metric-tile">
+              <div class="metric-label">Memory</div>
+              <div id="memoryValue" class="metric-value">Checking...</div>
+              <div id="memoryNote" class="metric-note">Browser-reported memory information.</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-label">FPS</div>
+              <div id="fpsValue" class="metric-value">Checking...</div>
+              <div class="metric-note">Live page rendering speed.</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-label">CPU Usage</div>
+              <div id="cpuValue" class="metric-value">Checking...</div>
+              <div class="metric-note">Best-effort page load estimate.</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-label">GPU</div>
+              <div id="gpuValue" class="metric-value">Checking...</div>
+              <div id="gpuNote" class="metric-note">Renderer info when the browser exposes it.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const token = localStorage.getItem('itecify-auth-token') || '';
+      const avatarButton = document.getElementById('avatarButton');
+      const avatarInput = document.getElementById('avatarInput');
+      const avatarImage = document.getElementById('avatarImage');
+      const avatarFallback = document.getElementById('avatarFallback');
+      const usernameValue = document.getElementById('usernameValue');
+      const emailValue = document.getElementById('emailValue');
+      const timeValue = document.getElementById('timeValue');
+      const projectsList = document.getElementById('projectsList');
+      const collaboratorsList = document.getElementById('collaboratorsList');
+      const addCollaboratorBtn = document.getElementById('addCollaboratorBtn');
+      const collaboratorStatus = document.getElementById('collaboratorStatus');
+      const memoryValue = document.getElementById('memoryValue');
+      const memoryNote = document.getElementById('memoryNote');
+      const fpsValue = document.getElementById('fpsValue');
+      const cpuValue = document.getElementById('cpuValue');
+      const gpuValue = document.getElementById('gpuValue');
+      const gpuNote = document.getElementById('gpuNote');
+      const TRACK_KEY = 'itecify-total-time-ms';
+      const CURRENT_WORKSPACE_KEY = 'itecify-workspace-id';
+      const AVATAR_PREFIX = 'itecify-avatar';
+      const AVATAR_COLOR_PREFIX = 'itecify-avatar-color';
+      let visitStartedAt = Date.now();
+      let currentUser = null;
+      let loadedWorkspaces = [];
+      let lastFrameTime = performance.now();
+      let fpsSamples = [];
+      let monitorStatsStarted = false;
+
+      function flushTrackedTime() {
+        const previous = Number(localStorage.getItem(TRACK_KEY) || '0');
+        const delta = Math.max(0, Date.now() - visitStartedAt);
+        localStorage.setItem(TRACK_KEY, String(previous + delta));
+        visitStartedAt = Date.now();
+      }
+
+      function formatDuration(ms) {
+        const totalMinutes = Math.floor(ms / 60000);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        if (hours <= 0) return minutes + 'm';
+        return hours + 'h ' + minutes + 'm';
+      }
+
+      function renderTotalTime() {
+        const stored = Number(localStorage.getItem(TRACK_KEY) || '0');
+        const liveTotal = stored + Math.max(0, Date.now() - visitStartedAt);
+        timeValue.textContent = formatDuration(liveTotal);
+      }
+
+      function getAvatarStorageKey(type) {
+        const userKey = currentUser?.id || currentUser?.username || 'guest';
+        return (type === 'image' ? AVATAR_PREFIX : AVATAR_COLOR_PREFIX) + ':' + userKey;
+      }
+
+      function colorFromSeed(seed) {
+        let hash = 0;
+        const text = String(seed || 'guest');
+        for (let i = 0; i < text.length; i += 1) {
+          hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+        return 'hsl(' + hue + ', 55%, 48%)';
+      }
+
+      function renderAvatar() {
+        const initialsSource = currentUser?.username || currentUser?.email || '?';
+        const initials = initialsSource.trim().slice(0, 1).toUpperCase() || '?';
+        const imageSrc = localStorage.getItem(getAvatarStorageKey('image')) || '';
+        let color = localStorage.getItem(getAvatarStorageKey('color')) || '';
+        if (!color) {
+          color = colorFromSeed(currentUser?.username || currentUser?.email || Math.random().toString(16).slice(2));
+          localStorage.setItem(getAvatarStorageKey('color'), color);
+        }
+
+        avatarButton.style.background = color;
+        avatarFallback.textContent = initials;
+
+        if (imageSrc) {
+          avatarImage.src = imageSrc;
+          avatarImage.style.display = 'block';
+          avatarFallback.style.display = 'none';
+        } else {
+          avatarImage.removeAttribute('src');
+          avatarImage.style.display = 'none';
+          avatarFallback.style.display = 'block';
+        }
+      }
+
+      function formatBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes <= 0) return 'Unavailable';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = bytes;
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+          value /= 1024;
+          unitIndex += 1;
+        }
+        return value.toFixed(value >= 100 || unitIndex === 0 ? 0 : 1) + ' ' + units[unitIndex];
+      }
+
+      function updateMemoryStats() {
+        const heap = performance.memory;
+        const deviceMemory = navigator.deviceMemory;
+
+        if (heap && Number.isFinite(heap.usedJSHeapSize) && Number.isFinite(heap.jsHeapSizeLimit)) {
+          memoryValue.textContent = formatBytes(heap.usedJSHeapSize) + ' / ' + formatBytes(heap.jsHeapSizeLimit);
+          memoryNote.textContent = 'JS heap in use. Device RAM: ' + (deviceMemory ? deviceMemory + ' GB' : 'Unavailable');
+          return;
+        }
+
+        if (deviceMemory) {
+          memoryValue.textContent = deviceMemory + ' GB';
+          memoryNote.textContent = 'Approximate device memory reported by the browser.';
+          return;
+        }
+
+        memoryValue.textContent = 'Unavailable';
+        memoryNote.textContent = 'This browser does not expose memory usage data.';
+      }
+
+      function updateGpuStats() {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) {
+          gpuValue.textContent = 'Unavailable';
+          gpuNote.textContent = 'WebGL is not available in this browser.';
+          return;
+        }
+
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        if (!ext) {
+          gpuValue.textContent = 'Limited';
+          gpuNote.textContent = 'GPU renderer details are hidden by this browser.';
+          return;
+        }
+
+        const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || 'Unknown GPU';
+        gpuValue.textContent = renderer;
+        gpuNote.textContent = 'Live GPU usage is not available from standard browser APIs.';
+      }
+
+      function updatePerformanceLoop(now) {
+        const delta = Math.max(1, now - lastFrameTime);
+        lastFrameTime = now;
+
+        const fps = 1000 / delta;
+        fpsSamples.push(fps);
+        if (fpsSamples.length > 30) fpsSamples.shift();
+
+        const avgFps = fpsSamples.reduce((sum, sample) => sum + sample, 0) / fpsSamples.length;
+        const normalizedFps = Math.max(0, Math.min(60, avgFps));
+        const cpuLoadEstimate = Math.max(0, Math.min(100, Math.round((1 - (normalizedFps / 60)) * 100)));
+
+        fpsValue.textContent = Math.round(avgFps) + ' FPS';
+        cpuValue.textContent = cpuLoadEstimate + '%';
+
+        requestAnimationFrame(updatePerformanceLoop);
+      }
+
+      function startSystemStats() {
+        if (monitorStatsStarted) return;
+        monitorStatsStarted = true;
+        updateMemoryStats();
+        updateGpuStats();
+        requestAnimationFrame((now) => {
+          lastFrameTime = now;
+          updatePerformanceLoop(now);
+        });
+        setInterval(updateMemoryStats, 3000);
+      }
+
+      function makeProjectButton(workspace) {
+        const button = document.createElement('button');
+        button.className = 'project-btn';
+        button.textContent = workspace.name;
+        button.onclick = () => {
+          localStorage.setItem('itecify-workspace-id', workspace.id);
+          flushTrackedTime();
+          window.location.href = '/app.html';
+        };
+        return button;
+      }
+
+      function addEmpty(el, text) {
+        const div = document.createElement('div');
+        div.className = 'empty';
+        div.textContent = text;
+        el.appendChild(div);
+      }
+
+      function setCollaboratorStatus(message) {
+        collaboratorStatus.textContent = message || '';
+      }
+
+      async function loadCollaboratorsFor(userId, workspaces) {
+        const collaboratorMap = new Map();
+
+        for (const workspace of workspaces) {
+          try {
+            const membersRes = await fetch('/api/workspaces/' + workspace.id + '/members', {
+              headers: { Authorization: 'Bearer ' + token }
+            });
+            const membersData = await membersRes.json();
+            if (!membersRes.ok) continue;
+            for (const member of membersData.members || []) {
+              if (member.id === userId) continue;
+              if (!collaboratorMap.has(member.id)) {
+                collaboratorMap.set(member.id, {
+                  ...member,
+                  projects: []
+                });
+              }
+              collaboratorMap.get(member.id).projects.push(workspace.name);
+            }
+          } catch (_) {}
+        }
+
+        collaboratorsList.innerHTML = '';
+        if (!collaboratorMap.size) {
+          addEmpty(collaboratorsList, 'No collaborators yet.');
+          return;
+        }
+
+        for (const collaborator of collaboratorMap.values()) {
+          const item = document.createElement('div');
+          item.className = 'collab-item';
+          item.innerHTML = '<strong>' + collaborator.username + '</strong>'
+            + '<div class="subtle">' + collaborator.email + '</div>'
+            + '<div class="subtle">Projects: ' + collaborator.projects.join(', ') + '</div>';
+          collaboratorsList.appendChild(item);
+        }
+      }
+
+      function getWorkspaceForInvite() {
+        const preferredId = localStorage.getItem(CURRENT_WORKSPACE_KEY) || '';
+        return loadedWorkspaces.find((workspace) => workspace.id === preferredId)
+          || loadedWorkspaces[0]
+          || null;
+      }
+
+      async function loadAccount() {
+        if (!token) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        try {
+          const meRes = await fetch('/api/auth/me', {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          const meData = await meRes.json();
+          if (!meRes.ok) throw new Error(meData.error || 'Session expired');
+          currentUser = meData.user;
+
+          usernameValue.textContent = meData.user.username;
+          emailValue.textContent = meData.user.email;
+          renderAvatar();
+
+          const workspaceRes = await fetch('/api/workspaces', {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          const workspaceData = await workspaceRes.json();
+          loadedWorkspaces = Array.isArray(workspaceData.workspaces) ? workspaceData.workspaces : [];
+
+          projectsList.innerHTML = '';
+          if (!loadedWorkspaces.length) addEmpty(projectsList, 'No projects yet.');
+          loadedWorkspaces.forEach((workspace) => {
+            projectsList.appendChild(makeProjectButton(workspace));
+          });
+
+          await loadCollaboratorsFor(meData.user.id, loadedWorkspaces);
+          setCollaboratorStatus(loadedWorkspaces.length ? '' : 'Create a project first to invite collaborators.');
+        } catch (err) {
+          usernameValue.textContent = 'Session expired';
+          emailValue.textContent = err.message;
+          renderAvatar();
+          projectsList.innerHTML = '';
+          collaboratorsList.innerHTML = '';
+          addEmpty(projectsList, 'Please log in again.');
+        }
+      }
+
+      document.getElementById('backBtn').onclick = () => {
+        flushTrackedTime();
+        window.location.href = '/app.html';
+      };
+
+      document.getElementById('homepageBtn').onclick = () => {
+        flushTrackedTime();
+        window.location.href = '/login.html';
+      };
+
+      avatarButton.onclick = () => {
+        avatarInput.click();
+      };
+
+      avatarInput.onchange = () => {
+        const file = avatarInput.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            localStorage.setItem(getAvatarStorageKey('image'), String(reader.result || ''));
+            renderAvatar();
+          } catch (_) {}
+        };
+        reader.readAsDataURL(file);
+        avatarInput.value = '';
+      };
+
+      addCollaboratorBtn.onclick = async () => {
+        if (!currentUser) return;
+        const workspace = getWorkspaceForInvite();
+        if (!workspace) {
+          setCollaboratorStatus('Create a project before adding collaborators.');
+          return;
+        }
+
+        const username = window.prompt('Collaborator username:');
+        if (!username || !username.trim()) return;
+
+        try {
+          const res = await fetch('/api/workspaces/' + workspace.id + '/add-member', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + token
+            },
+            body: JSON.stringify({ identifier: username.trim() })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not add collaborator');
+          setCollaboratorStatus('Added ' + username.trim() + ' to ' + workspace.name + '.');
+          await loadCollaboratorsFor(currentUser.id, loadedWorkspaces);
+        } catch (err) {
+          setCollaboratorStatus(err.message);
+        }
+      };
+
+      window.addEventListener('beforeunload', flushTrackedTime);
+      setInterval(() => {
+        renderTotalTime();
+      }, 1000);
+
+      renderTotalTime();
+      renderAvatar();
+      startSystemStats();
+      loadAccount();
+    </script>
+  </body>
+</html>

@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>iTECify IDE</title>
     <style>
-      :root { color-scheme: dark; }
+      :root {
+        color-scheme: dark;
+        --bg: #0b1220;
+        --panel: rgba(15, 23, 39, 0.82);
+        --panel-strong: rgba(15, 23, 39, 0.94);
+        --panel-soft: rgba(255, 255, 255, 0.04);
+        --line: rgba(136, 166, 214, 0.22);
+        --text: #eef4ff;
+        --muted: #9eb0cc;
+        --accent: #64b5ff;
+        --accent-2: #8bffcf;
+        --danger: #ff8f8f;
+      }
       * { box-sizing: border-box; }
+<<<<<<< Updated upstream
       html, body { overflow-x: hidden; max-width: 100vw; }
       body { margin:0; font-family: Segoe UI, Roboto, Arial, sans-serif; background:#1e1e1e; color:#ddd; min-height:100vh; overflow-x: hidden; }
       .container { display:grid; grid-template-rows:auto 1fr; height:100vh; overflow: hidden; }
@@ -46,18 +59,283 @@
       #codeEditor { flex:1; min-height:0; overflow: hidden; }
       .status { background:#16171f; border-top:1px solid #333; color:#9da5b8; padding:6px 10px; display:flex; justify-content:space-between; font-size:12px; overflow:hidden; }
       .output { background:#101118; color:#c8d0e0; border-top:1px solid #333; padding:10px; font-family:Consolas, Monaco, monospace; font-size:12px; overflow:auto; height:170px; white-space:pre-wrap; max-width:100%; }
+=======
+      body {
+        margin:0;
+        font-family: Segoe UI, Roboto, Arial, sans-serif;
+        color:var(--text);
+        min-height:100vh;
+        background:
+          radial-gradient(circle at top left, rgba(100, 181, 255, 0.18), transparent 30%),
+          radial-gradient(circle at top right, rgba(139, 255, 207, 0.12), transparent 24%),
+          linear-gradient(160deg, #09101c 0%, #10192a 45%, #08111a 100%);
+      }
+      body::before {
+        content:"";
+        position:fixed;
+        inset:0;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size:48px 48px;
+        mask-image:linear-gradient(to bottom, rgba(0,0,0,0.95), rgba(0,0,0,0.25));
+        pointer-events:none;
+      }
+      .container { display:grid; grid-template-rows:auto 1fr; height:100vh; position:relative; z-index:1; }
+      .top {
+        background:rgba(10, 17, 30, 0.72);
+        backdrop-filter:blur(16px);
+        border-bottom:1px solid var(--line);
+        padding:10px 12px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+        flex-wrap:nowrap;
+        overflow:visible;
+        position:relative;
+        z-index:30;
+        box-shadow:0 10px 24px rgba(0,0,0,0.22);
+      }
+      .top h1 {
+        margin:0;
+        font-size:16px;
+        color:#fff;
+        white-space:nowrap;
+        flex-shrink:0;
+        letter-spacing:0.08em;
+        text-transform:uppercase;
+      }
+      .top .account-btn { background:linear-gradient(135deg, var(--accent), #2d76ff); border-color:transparent; color:#fff; box-shadow:0 12px 24px rgba(59,129,255,0.24); }
+      .top .controls { display:inline-flex; gap:8px; flex-wrap:nowrap; align-items:center; min-width:0; }
+      .top button, .top select, .top input {
+        background:var(--panel-soft);
+        border:1px solid rgba(142, 176, 221, 0.18);
+        color:var(--text);
+        border-radius:999px;
+        padding:7px 12px;
+        font-size:13px;
+        cursor:pointer;
+        transition:transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      }
+      .top button:hover, .top select:hover { background:rgba(255, 255, 255, 0.09); border-color:rgba(142, 176, 221, 0.3); transform:translateY(-1px); }
+      .top .dropdown { position:relative; margin-left:auto; flex-shrink:0; }
+      .top .dropdown-toggle { display:flex; align-items:center; gap:6px; white-space:nowrap; min-width:92px; justify-content:center; }
+      .top .dropdown-arrow { font-size:10px; }
+      .top .dropdown-content {
+        display:none;
+        position:absolute;
+        right:0;
+        top:calc(100% + 8px);
+        background:var(--panel-strong);
+        backdrop-filter:blur(18px);
+        border:1px solid var(--line);
+        border-radius:16px;
+        min-width:180px;
+        z-index:2000;
+        box-shadow:0 18px 40px rgba(0,0,0,0.34);
+        overflow:hidden;
+      }
+      .top .dropdown-content.show { display:block; }
+      .top .dropdown-toggle.open .dropdown-arrow { transform:rotate(180deg); }
+      .top .dropdown-content button {
+        display:block;
+        width:100%;
+        text-align:left;
+        border:none;
+        border-radius:0;
+        padding:10px 14px;
+        background:transparent;
+        transform:none;
+      }
+      .top .dropdown-content button:hover { background:rgba(255,255,255,0.08); }
+      .main { display:grid; grid-template-columns:220px 1fr; min-height:0; }
+      .sidebar {
+        background:rgba(9, 15, 28, 0.74);
+        backdrop-filter:blur(16px);
+        border-right:1px solid var(--line);
+        display:flex;
+        flex-direction:column;
+        min-height:0;
+        box-shadow:inset -1px 0 0 rgba(255,255,255,0.02);
+      }
+      .panel-title {
+        font-size:11px;
+        color:var(--muted);
+        text-transform:uppercase;
+        letter-spacing:0.12em;
+        padding:10px 10px 8px;
+        border-bottom:1px solid rgba(136, 166, 214, 0.14);
+        margin:0;
+      }
+      .file-list, .agent-list { overflow:auto; padding:6px; flex:1; }
+      .file-item, .agent-item {
+        background:rgba(255,255,255,0.05);
+        color:#e8eefc;
+        margin-bottom:8px;
+        border-radius:12px;
+        border:1px solid rgba(136, 166, 214, 0.14);
+        padding:8px 10px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        cursor:pointer;
+        font-size:13px;
+        transition:transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+      }
+      .file-item span, .agent-item span { flex:1; }
+      .file-item:hover, .agent-item:hover { transform:translateY(-1px); border-color:rgba(100, 181, 255, 0.38); background:rgba(255,255,255,0.08); }
+      .file-item button, .agent-item button {
+        background:rgba(255,255,255,0.06);
+        border:1px solid rgba(136, 166, 214, 0.18);
+        color:#d7e5ff;
+        border-radius:999px;
+        padding:3px 8px;
+        font-size:11px;
+        cursor:pointer;
+      }
+      .file-item button:hover, .agent-item button:hover { background:rgba(255,255,255,0.12); }
+      .file-item.active, .agent-item.active {
+        border-color:rgba(100, 181, 255, 0.45);
+        background:linear-gradient(135deg, rgba(100, 181, 255, 0.18), rgba(139, 255, 207, 0.08));
+        box-shadow:0 8px 24px rgba(26, 70, 138, 0.2);
+      }
+      .agent-panel {
+        background:var(--panel);
+        border:1px solid var(--line);
+        border-radius:18px;
+        margin:8px 8px 0 8px;
+        padding:10px;
+        box-shadow:0 16px 28px rgba(0,0,0,0.24);
+      }
+      .agent-panel.hidden { display:none; }
+      .agent-panel h3 { margin:0 0 8px 0; font-size:12px; color:#fff; letter-spacing:0.08em; text-transform:uppercase; }
+      .agent-panel textarea {
+        width:100%;
+        height:70px;
+        margin-bottom:6px;
+        background:rgba(4, 8, 16, 0.72);
+        border:1px solid rgba(136, 166, 214, 0.18);
+        color:#eee;
+        padding:8px;
+        font-family:Consolas, Monaco, monospace;
+        font-size:12px;
+        border-radius:12px;
+      }
+      .agent-panel .agent-suggestions {
+        background:rgba(4, 8, 16, 0.82);
+        border:1px solid rgba(136, 166, 214, 0.16);
+        border-radius:12px;
+        padding:8px;
+        color:#c8d0e0;
+        font-size:12px;
+        height:110px;
+        overflow:auto;
+        white-space:pre-wrap;
+      }
+      .agent-panel .agent-buttons { display:flex; gap:6px; margin-top:8px; }
+      .agent-panel .agent-buttons button {
+        flex:1;
+        background:linear-gradient(135deg, var(--accent), #2d76ff);
+        border:1px solid transparent;
+        color:#fff;
+        border-radius:14px;
+        padding:8px;
+        font-size:12px;
+        cursor:pointer;
+        box-shadow:0 12px 24px rgba(59,129,255,0.22);
+      }
+      .editor-wrap { display:flex; flex-direction:column; min-height:0; }
+      .tabbar {
+        background:rgba(10, 17, 30, 0.6);
+        display:flex;
+        border-bottom:1px solid var(--line);
+        backdrop-filter:blur(12px);
+      }
+      .tab {
+        cursor:pointer;
+        color:#c9d8f0;
+        padding:10px 14px;
+        font-size:13px;
+        border-right:1px solid rgba(136, 166, 214, 0.12);
+        transition:background 0.16s ease, color 0.16s ease;
+        display:flex;
+        align-items:center;
+        gap:8px;
+      }
+      .tab-label { max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .tab-close {
+        width:18px;
+        height:18px;
+        border-radius:999px;
+        border:none;
+        background:rgba(255,255,255,0.08);
+        color:#d8e7ff;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        font-size:11px;
+        line-height:1;
+        padding:0;
+        cursor:pointer;
+        flex-shrink:0;
+      }
+      .tab-close:hover { background:rgba(255,255,255,0.18); }
+      .tab:hover { background:rgba(255,255,255,0.06); }
+      .tab.active {
+        background:linear-gradient(135deg, rgba(100, 181, 255, 0.14), rgba(139,255,207,0.08));
+        color:#fff;
+        border-bottom:3px solid var(--accent);
+      }
+      .editor-host { flex:1; position:relative; min-height:0; background:rgba(5, 10, 20, 0.72); }
+      #codeEditor, #fallbackEditor { position:absolute; inset:0; width:100%; height:100%; }
+      #codeEditor { min-height:0; background:transparent; }
+      #fallbackEditor {
+        display:none;
+        resize:none;
+        border:none;
+        outline:none;
+        padding:14px;
+        background:rgba(5, 10, 20, 0.88);
+        color:#e7edf9;
+        font:13px/1.5 Consolas, Monaco, monospace;
+        tab-size:2;
+      }
+      .status {
+        background:rgba(10, 17, 30, 0.84);
+        border-top:1px solid var(--line);
+        color:var(--muted);
+        padding:7px 12px;
+        display:flex;
+        justify-content:space-between;
+        font-size:12px;
+        backdrop-filter:blur(12px);
+      }
+      .output {
+        background:rgba(4, 8, 16, 0.86);
+        color:#c8d0e0;
+        border-top:1px solid var(--line);
+        padding:12px;
+        font-family:Consolas, Monaco, monospace;
+        font-size:12px;
+        overflow:auto;
+        height:170px;
+        white-space:pre-wrap;
+      }
+      .output.error-output { color:var(--danger); }
+      .monaco-editor .error-line-highlight { background:rgba(255, 82, 82, 0.14); }
+>>>>>>> Stashed changes
       .hidden { display:none; }
       .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:1000; }
-      .modal { background:#1e1e1e; border:1px solid #444; border-radius:8px; padding:20px; width:90%; max-width:600px; max-height:80vh; overflow:auto; }
+      .modal { background:var(--panel-strong); border:1px solid var(--line); border-radius:20px; padding:20px; width:90%; max-width:600px; max-height:80vh; overflow:auto; backdrop-filter:blur(16px); }
       .modal h2 { margin-top:0; color:#fff; }
       .modal-prompt { margin:12px 0; }
       .modal-prompt label { display:block; margin-bottom:6px; font-size:13px; color:#a0a7b0; }
-      .modal-prompt textarea { width:100%; height:80px; background:#2a2a2f; border:1px solid #444; border-radius:4px; color:#eee; padding:8px; font-family:Consolas, Monaco, monospace; font-size:12px; resize:vertical; }
-      .modal-suggestions { background:#2a2a2f; border:1px solid #444; border-radius:4px; padding:10px; margin:12px 0; max-height:250px; overflow:auto; color:#c8d0e0; font-size:12px; white-space:pre-wrap; }
+      .modal-prompt textarea { width:100%; height:80px; background:rgba(4,8,16,0.78); border:1px solid rgba(136, 166, 214, 0.18); border-radius:12px; color:#eee; padding:8px; font-family:Consolas, Monaco, monospace; font-size:12px; resize:vertical; }
+      .modal-suggestions { background:rgba(4,8,16,0.78); border:1px solid rgba(136, 166, 214, 0.18); border-radius:12px; padding:10px; margin:12px 0; max-height:250px; overflow:auto; color:#c8d0e0; font-size:12px; white-space:pre-wrap; }
       .modal-buttons { display:flex; gap:8px; margin-top:16px; }
-      .modal-buttons button { flex:1; background:#2a2a2f; border:1px solid #444; color:#eee; border-radius:4px; padding:8px; cursor:pointer; }
-      .modal-buttons button:hover { background:#353540; }
-      .file-item input { background:#3a3a45; border:1px solid #5f9cff; color:#eee; padding:4px; font-size:13px; flex:1; border-radius:3px; }
+      .modal-buttons button { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(136, 166, 214, 0.18); color:#eee; border-radius:14px; padding:8px; cursor:pointer; }
+      .modal-buttons button:hover { background:rgba(255,255,255,0.1); }
+      .file-item input { background:rgba(4,8,16,0.8); border:1px solid var(--accent); color:#eee; padding:6px 8px; font-size:13px; flex:1; border-radius:10px; }
       .file-item input:focus { outline:none; border-color:#7fb3ff; box-shadow:0 0 0 2px rgba(95,156,255,0.2); }
       .file-item input.error { border-color:#ff6b6b; animation:shake 0.2s ease; }
       .file-new-hint { font-size:10px; color:#7a8090; padding:2px 8px 6px 8px; }
@@ -80,7 +358,12 @@
       <div class="top">
         <h1>iTECify IDE</h1>
         <div class="controls">
+<<<<<<< Updated upstream
           <span id="loggedUser" style="color:#8f8; margin-right:16px; font-size:12px">Loading...</span>
+=======
+          <button id="accountBtn" class="account-btn">Account</button>
+          <button id="loginBtn">Login</button>
+>>>>>>> Stashed changes
           <select id="workspaceSelect" title="Workspace" style="min-width:150px"></select>
           <button id="newFileBtn">New File</button>
           <button id="importFileBtn">Import</button>
@@ -89,13 +372,16 @@
           <button id="downloadFileBtn">Save As</button>
           <button id="syncFolderBtn" style="background:#1a2a1a;border-color:#3a6a3a;color:#8fcf8f;">📁 Sync Folder</button>
           <button id="runActiveBtn">Run Active</button>
-          <button id="runAllBtn">Run All</button>
           <button id="undoBtn">Undo</button>
           <button id="redoBtn">Redo</button>
         </div>
         <div class="dropdown">
           <button id="menuBtn" class="dropdown-toggle">Menu <span class="dropdown-arrow">▼</span></button>
           <div id="menuDropdown" class="dropdown-content">
+<<<<<<< Updated upstream
+=======
+            <button id="homepageBtn">Homepage</button>
+>>>>>>> Stashed changes
             <button id="createWorkspaceBtn">Create Workspace</button>
             <button id="addMemberBtn">Add Member</button>
             <button id="logoutBtn">Logout</button>
@@ -107,14 +393,12 @@
           <div class="panel-title">Files</div>
           <div class="file-list" id="fileList"></div>
           <div class="panel-title">AI Agents</div>
-          <div class="agent-list" id="agentList"></div>
-          <div id="agentPanel" class="agent-panel hidden">
+          <div id="agentPanel" class="agent-panel">
             <h3 id="agentPanelTitle">AI Agent</h3>
             <textarea id="agentPanelPrompt" placeholder="Ask the AI about this code"></textarea>
             <div id="agentPanelSuggestions" class="agent-suggestions">Type a prompt and click Get Suggestions.</div>
             <div class="agent-buttons">
               <button id="agentPanelSubmitBtn">Get Suggestions</button>
-              <button id="agentPanelHideBtn">Hide</button>
             </div>
             <div style="margin-top:6px;">
               <button id="agentSetKeyBtn" style="width:100%;background:#1a2a1a;border:1px solid #3a6a3a;color:#8fcf8f;border-radius:4px;padding:5px;font-size:11px;cursor:pointer;">🔑 Set Groq API Key</button>
@@ -124,7 +408,14 @@
         </aside>
         <section class="editor-wrap">
           <div class="tabbar" id="tabBar"></div>
+<<<<<<< Updated upstream
           <div id="codeEditor" style="flex:1;min-height:0;"></div>
+=======
+          <div class="editor-host">
+            <div id="codeEditor"></div>
+            <textarea id="fallbackEditor" spellcheck="false"></textarea>
+          </div>
+>>>>>>> Stashed changes
           <div class="status"><span id="statusFile">No file selected</span><span id="cursorPos">Ln 1, Col 1</span></div>
           <div class="status" id="multiCursorStatus">Collaborators: <span id="multiCursorList">None</span></div>
           <div class="output" id="runOutput">Output will appear here.</div>
@@ -132,6 +423,7 @@
       </div>
     </div>
 
+<<<<<<< Updated upstream
     <script type="module">
       import * as Y from 'yjs';
       import { WebsocketProvider } from 'y-websocket';
@@ -140,6 +432,16 @@
       
       const STORAGE_KEY = 'itecify-ide-state-v2';
       const DEFAULT_FILES = [];
+=======
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script>
+      const STORAGE_KEY_PREFIX = 'itecify-ide-state-v3';
+      const DEFAULT_FILES = [
+        { id:'file-js', name:'main.js', language:'nodejs', code:'// Hello from JavaScript\nconsole.log("Hello, World!");\n' },
+        { id:'file-py', name:'main.py', language:'python', code:'# Hello from Python\nprint("Hello, World!")\n' },
+        { id:'file-html', name:'index.html', language:'html', code:'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Hello</title></head><body><h1>Hello, World!</h1></body></html>' }
+      ];
+>>>>>>> Stashed changes
       const TEMPLATES = {
         nodejs:'// Hello from JavaScript\nconsole.log("Hello, World!");\n',
         python:'# Hello from Python\nprint("Hello, World!")\n',
@@ -147,13 +449,14 @@
         c:'#include <stdio.h>\n// Hello from C\nint main() { printf("Hello, World!\\n"); return 0; }\n',
         cpp:'#include <iostream>\n// Hello from C++\nint main() { std::cout << "Hello, World!\\n"; return 0; }\n',
         csharp:'using System;\n// Hello from C#\nclass Program { static void Main() { Console.WriteLine("Hello, World!"); } }\n',
-        html:'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Hello</title></head><body><h1>Hello, World!</h1></body></html>',
+        html:'<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Hello</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n</body>\n</html>\n',
         css:'/* Hello from CSS */\nbody { background: #1e1e1e; color: #ddd; font-family: Arial, sans-serif; }\n'
       };
 
       const fileUpload = document.getElementById('fileUpload');
       const fileListEl = document.getElementById('fileList');
       const tabBarEl = document.getElementById('tabBar');
+<<<<<<< Updated upstream
       const codeEditorContainer = document.getElementById('codeEditor');
       const statusFile = document.getElementById('statusFile');
       const cursorPos = document.getElementById('cursorPos');
@@ -164,6 +467,22 @@
       const createWorkspaceBtn = document.getElementById('createWorkspaceBtn');
       const addMemberBtn = document.getElementById('addMemberBtn');
       const agentListEl = document.getElementById('agentList');
+=======
+      const codeEditorEl = document.getElementById('codeEditor');
+      const fallbackEditorEl = document.getElementById('fallbackEditor');
+      const accountBtn = document.getElementById('accountBtn');
+      const loginBtn = document.getElementById('loginBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const homepageBtn = document.getElementById('homepageBtn');
+      const menuBtn = document.getElementById('menuBtn');
+      const menuDropdown = document.getElementById('menuDropdown');
+      const workspaceSelect = document.getElementById('workspaceSelect');
+      const createWorkspaceBtn = document.getElementById('createWorkspaceBtn');
+      const addMemberBtn = document.getElementById('addMemberBtn');
+      const statusFile = document.getElementById('statusFile');
+      const cursorPos = document.getElementById('cursorPos');
+      const runOutput = document.getElementById('runOutput');
+>>>>>>> Stashed changes
       const agentPanel = document.getElementById('agentPanel');
       const agentPanelTitle = document.getElementById('agentPanelTitle');
       const agentPanelPrompt = document.getElementById('agentPanelPrompt');
@@ -248,6 +567,7 @@
         return extMap[ext] || 'nodejs';
       }
 
+<<<<<<< Updated upstream
       function generateColorFromUsername(username) {
         let hash = 0;
         for (let i = 0; i < username.length; i++) {
@@ -414,10 +734,18 @@
       // Real cursor sync is handled by Yjs awareness (see initializeYjsProvider)
 
       let state = { files: [], activeId: null, agents: [{id:'agent-code', name:'Code Assistant'}] };
+=======
+      function getStorageKey() {
+        return STORAGE_KEY_PREFIX + ':' + (currentWorkspaceId || 'local');
+      }
+
+      let state = { files: [], activeId: null, openTabs: [], agents: [{id:'agent-code', name:'Code Assistant'}] };
+>>>>>>> Stashed changes
       let history = {};
       let isUndoRedo = false;
       let currentAgentId = null;
       let undoDebounceTimer = null;
+<<<<<<< Updated upstream
       let authToken = localStorage.getItem('itecify-auth-token') || null;
       let currentUser = null;
       let currentWorkspaceId = localStorage.getItem('itecify-workspace-id') || null;
@@ -730,23 +1058,381 @@
             btn.style.color = '#8fcf8f';
           }
         }
+=======
+      let authToken = localStorage.getItem('itecify-auth-token') || '';
+      let currentUser = null;
+      let workspaces = [];
+      let currentWorkspaceId = localStorage.getItem('itecify-workspace-id') || '';
+      let monacoEditor = null;
+      let monacoModel = null;
+      let usingFallbackEditor = false;
+      let suppressEditorChange = false;
+      let htmlPreviewWindow = null;
+      let errorLineDecorations = [];
+      const TRACK_KEY = 'itecify-total-time-ms';
+      let visitStartedAt = Date.now();
+
+      function flushTrackedTime() {
+        const previous = Number(localStorage.getItem(TRACK_KEY) || '0');
+        const delta = Math.max(0, Date.now() - visitStartedAt);
+        localStorage.setItem(TRACK_KEY, String(previous + delta));
+        visitStartedAt = Date.now();
+      }
+
+      function getMonacoLanguage(language) {
+        const languageMap = {
+          nodejs: 'javascript',
+          python: 'python',
+          rust: 'rust',
+          c: 'c',
+          cpp: 'cpp',
+          csharp: 'csharp',
+          html: 'html',
+          css: 'css'
+        };
+        return languageMap[language] || 'plaintext';
+      }
+
+      function getEditorValue() {
+        if (monacoEditor) return monacoEditor.getValue();
+        if (usingFallbackEditor) return fallbackEditorEl.value;
+        return '';
+      }
+
+      function setEditorValue(value, language) {
+        if (monacoEditor && monacoModel) {
+          suppressEditorChange = true;
+          monaco.editor.setModelLanguage(monacoModel, getMonacoLanguage(language));
+          monacoModel.setValue(value);
+          suppressEditorChange = false;
+        } else if (usingFallbackEditor) {
+          fallbackEditorEl.value = value;
+        } else {
+          return;
+        }
+        clearEditorDiagnostics();
+        updateCursor();
+      }
+
+      function setRunOutputMessage(message, isError = false) {
+        runOutput.classList.toggle('error-output', !!isError);
+        runOutput.textContent = message;
+      }
+
+      function clearEditorDiagnostics() {
+        if (!window.monaco || !monacoModel || !monacoEditor) return;
+        monaco.editor.setModelMarkers(monacoModel, 'runner-errors', []);
+        errorLineDecorations = monacoEditor.deltaDecorations(errorLineDecorations, []);
+      }
+
+      function parseDiagnostics(stderr) {
+        const text = String(stderr || '');
+        if (!text.trim()) return [];
+        const diagnostics = [];
+        const patterns = [
+          /:(\d+):(\d+):\s*(?:fatal error|error|warning|note):\s*(.+)/gi,
+          /line\s+(\d+)(?:,\s*column\s+(\d+))?.*?(?:error|exception)[:\s-]+(.+)/gi,
+          /File\s+"[^"]+",\s+line\s+(\d+).*?\n(?:.+\n)*?([A-Za-z]+Error:\s*.+)/g,
+          /<anonymous>:(\d+):(\d+)\)?\s*\n?(?:.+\n)*?([A-Za-z]*Error:\s*.+)/g
+        ];
+
+        patterns.forEach((pattern) => {
+          let match;
+          while ((match = pattern.exec(text))) {
+            const lineNumber = Number(match[1] || 1);
+            const column = Number(match[2] || 1);
+            const message = String(match[3] || match[2] || 'Error').trim();
+            if (!Number.isFinite(lineNumber) || lineNumber < 1) continue;
+            diagnostics.push({
+              lineNumber,
+              column: Number.isFinite(column) && column > 0 ? column : 1,
+              message
+            });
+          }
+        });
+
+        const seen = new Set();
+        return diagnostics.filter((item) => {
+          const key = item.lineNumber + ':' + item.column + ':' + item.message;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      function showEditorDiagnostics(stderr) {
+        if (!window.monaco || !monacoModel || !monacoEditor) return;
+        const diagnostics = parseDiagnostics(stderr);
+        if (!diagnostics.length) {
+          clearEditorDiagnostics();
+          return;
+        }
+
+        const markers = diagnostics.map((item) => ({
+          severity: monaco.MarkerSeverity.Error,
+          startLineNumber: item.lineNumber,
+          startColumn: item.column,
+          endLineNumber: item.lineNumber,
+          endColumn: Math.max(item.column + 1, 2),
+          message: item.message
+        }));
+
+        monaco.editor.setModelMarkers(monacoModel, 'runner-errors', markers);
+        errorLineDecorations = monacoEditor.deltaDecorations(
+          errorLineDecorations,
+          diagnostics.map((item) => ({
+            range: new monaco.Range(item.lineNumber, 1, item.lineNumber, 1),
+            options: { isWholeLine: true, className: 'error-line-highlight' }
+          }))
+        );
+      }
+
+      function initMonaco() {
+        return new Promise((resolve, reject) => {
+          if (!window.require) {
+            reject(new Error('Monaco loader failed to load.'));
+            return;
+          }
+
+          window.require.config({
+            paths: {
+              vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs'
+            }
+          });
+
+          window.require(['vs/editor/editor.main'], () => {
+            monacoModel = monaco.editor.createModel('', 'javascript');
+            monacoEditor = monaco.editor.create(codeEditorEl, {
+              model: monacoModel,
+              theme: 'vs-dark',
+              automaticLayout: true,
+              fontSize: 13,
+              lineHeight: 20,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: 'off',
+              tabSize: 2,
+              insertSpaces: true
+            });
+
+            monacoEditor.onDidChangeModelContent(() => {
+              if (suppressEditorChange || !state.activeId) return;
+              const file = getActiveFile();
+              if (!file) return;
+              const previousCode = file.code;
+              file.code = getEditorValue();
+              if (!isUndoRedo) {
+                clearTimeout(undoDebounceTimer);
+                undoDebounceTimer = setTimeout(() => {
+                  if (previousCode !== file.code) {
+                    history[file.id].undo.push(previousCode);
+                    history[file.id].redo = [];
+                  }
+                }, 500);
+              }
+              saveState();
+              updateCursor();
+            });
+
+            monacoEditor.onDidChangeCursorPosition(() => updateCursor());
+
+            monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+              flushCurrentFile();
+              saveState();
+              setRunOutputMessage('Saved');
+            });
+
+            resolve();
+          }, reject);
+        });
+      }
+
+      function initFallbackEditor() {
+        usingFallbackEditor = true;
+        codeEditorEl.style.display = 'none';
+        fallbackEditorEl.style.display = 'block';
+        fallbackEditorEl.addEventListener('input', () => {
+          if (!state.activeId) return;
+          const file = getActiveFile();
+          if (!file) return;
+          file.code = fallbackEditorEl.value;
+          saveState();
+          updateCursor();
+        });
+        fallbackEditorEl.addEventListener('click', updateCursor);
+        fallbackEditorEl.addEventListener('keyup', updateCursor);
+        fallbackEditorEl.addEventListener('select', updateCursor);
+        fallbackEditorEl.addEventListener('scroll', updateCursor);
+        fallbackEditorEl.addEventListener('keydown', (event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+            event.preventDefault();
+            flushCurrentFile();
+            saveState();
+            setRunOutputMessage('Saved');
+          }
+        });
+        setRunOutputMessage('Monaco could not load. Using fallback editor.');
+      }
+
+      function loadCurrentUser() {
+        try {
+          currentUser = JSON.parse(localStorage.getItem('itecify-current-user') || 'null');
+        } catch (err) {
+          currentUser = null;
+        }
+      }
+
+      function updateAuthUI() {
+        if (authToken && currentUser) {
+          loginBtn.classList.add('hidden');
+          logoutBtn.classList.remove('hidden');
+          accountBtn.textContent = 'Account';
+          return;
+        }
+        loginBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+        accountBtn.textContent = 'Account';
+      }
+
+      function renderWorkspaceMenu() {
+        workspaceSelect.innerHTML = '';
+
+        if (!authToken || !currentUser) {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'Login for workspaces';
+          workspaceSelect.appendChild(option);
+          workspaceSelect.disabled = true;
+          createWorkspaceBtn.disabled = true;
+          addMemberBtn.disabled = true;
+          return;
+        }
+
+        workspaceSelect.disabled = false;
+        createWorkspaceBtn.disabled = false;
+        addMemberBtn.disabled = false;
+
+        if (!workspaces.length) {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'Personal Workspace';
+          workspaceSelect.appendChild(option);
+          workspaceSelect.value = '';
+          currentWorkspaceId = '';
+          localStorage.removeItem('itecify-workspace-id');
+          return;
+        }
+
+        workspaces.forEach((workspace) => {
+          const option = document.createElement('option');
+          option.value = workspace.id;
+          option.textContent = workspace.name;
+          workspaceSelect.appendChild(option);
+        });
+
+        const validCurrent = workspaces.some((workspace) => workspace.id === currentWorkspaceId);
+        currentWorkspaceId = validCurrent ? currentWorkspaceId : workspaces[0].id;
+        workspaceSelect.value = currentWorkspaceId;
+        localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
+      }
+
+      async function refreshWorkspaces() {
+        if (!authToken) {
+          workspaces = [];
+          renderWorkspaceMenu();
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/workspaces', {
+            headers: { Authorization: 'Bearer ' + authToken }
+          });
+          if (!res.ok) throw new Error('Workspace list unavailable');
+          const data = await res.json();
+          workspaces = Array.isArray(data.workspaces) ? data.workspaces : [];
+        } catch (err) {
+          workspaces = [];
+        }
+
+        renderWorkspaceMenu();
+      }
+
+      async function verifySession() {
+        loadCurrentUser();
+        if (!authToken) {
+          window.location.href = '/login.html';
+          updateAuthUI();
+          renderWorkspaceMenu();
+          return;
+        }
+        try {
+          const res = await fetch('/api/auth/me', {
+            headers: { Authorization: 'Bearer ' + authToken }
+          });
+          if (!res.ok) throw new Error('Session expired');
+          const data = await res.json();
+          currentUser = data.user || null;
+          localStorage.setItem('itecify-current-user', JSON.stringify(currentUser));
+        } catch (err) {
+          authToken = '';
+          currentUser = null;
+          localStorage.removeItem('itecify-auth-token');
+          localStorage.removeItem('itecify-current-user');
+          window.location.href = '/login.html';
+        }
+        updateAuthUI();
+        await refreshWorkspaces();
+      }
+
+      function resetDefaultState() {
+        state = {
+          files: DEFAULT_FILES.map((file) => ({ ...file })),
+          activeId: DEFAULT_FILES[0].id,
+          openTabs: DEFAULT_FILES.map((file) => file.id),
+          agents: [{ id:'agent-code', name:'Code Assistant' }]
+        };
+        history = {};
+        state.files.forEach((file) => {
+          history[file.id] = { undo: [], redo: [] };
+        });
+>>>>>>> Stashed changes
       }
 
       function loadState() {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) state = JSON.parse(raw);
+          const raw = localStorage.getItem(getStorageKey());
+          if (raw) {
+            state = JSON.parse(raw);
+          } else {
+            const legacyRaw = localStorage.getItem('itecify-ide-state-v2');
+            if (legacyRaw) state = JSON.parse(legacyRaw);
+          }
         } catch (e) {
           console.warn('load state failed', e);
         }
+<<<<<<< Updated upstream
         // Don't create default files - let users create their own
         if (!Array.isArray(state.files)) {
           state.files = [];
+=======
+        if (!Array.isArray(state.files) || !state.files.length) {
+          resetDefaultState();
+>>>>>>> Stashed changes
         }
         if (!Array.isArray(state.agents) || !state.agents.length) {
           state.agents = [{id:'agent-code', name:'Code Assistant'}];
         }
+        if (!Array.isArray(state.openTabs)) {
+          state.openTabs = state.files.map((file) => file.id);
+        }
+        state.openTabs = state.openTabs.filter((id) => state.files.some((file) => file.id === id));
+        if (!state.openTabs.length && state.files.length) {
+          state.openTabs = [state.files[0].id];
+        }
         if (!state.activeId && state.files.length) state.activeId = state.files[0].id;
+        if (state.activeId && !state.openTabs.includes(state.activeId)) {
+          state.openTabs.push(state.activeId);
+        }
         state.files.forEach((file) => { if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; });
       }
       
@@ -866,7 +1552,20 @@
       }
 
       function saveState() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(getStorageKey(), JSON.stringify(state));
+      }
+
+      function persistCurrentState() {
+        flushCurrentFile();
+        saveState();
+      }
+
+      function loadWorkspaceState() {
+        resetDefaultState();
+        loadState();
+        renderFiles();
+        renderAgents();
+        if (state.activeId) selectFile(state.activeId, { skipFlush: true });
       }
 
       function broadcastFileUpdate(file) {
@@ -999,34 +1698,34 @@
             row.appendChild(deleteBtn);
             fileListEl.appendChild(row);
 
-            const tab = document.createElement('div');
-            tab.className = 'tab' + (file.id === state.activeId ? ' active' : '');
-            tab.textContent = file.name;
-            tab.onclick = () => selectFile(file.id);
-            tabBarEl.appendChild(tab);
+            if (state.openTabs.includes(file.id)) {
+              const tab = document.createElement('div');
+              tab.className = 'tab' + (file.id === state.activeId ? ' active' : '');
+              tab.onclick = () => selectFile(file.id);
+
+              const tabLabel = document.createElement('span');
+              tabLabel.className = 'tab-label';
+              tabLabel.textContent = file.name;
+              tab.appendChild(tabLabel);
+
+              const closeBtn = document.createElement('button');
+              closeBtn.className = 'tab-close';
+              closeBtn.type = 'button';
+              closeBtn.textContent = 'x';
+              closeBtn.title = 'Close tab';
+              closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                closeTab(file.id);
+              };
+              tab.appendChild(closeBtn);
+
+              tabBarEl.appendChild(tab);
+            }
           }
         });
       }
 
-      function renderAgents() {
-        agentListEl.innerHTML = '';
-        state.agents.forEach(agent => {
-          const row = document.createElement('div');
-          row.className = 'agent-item';
-          const label = document.createElement('span');
-          label.textContent = agent.name;
-          row.appendChild(label);
-
-          const openBtn = document.createElement('button');
-          openBtn.textContent = 'Open';
-          openBtn.onclick = (e) => {
-            e.stopPropagation();
-            showAgentPanel(agent);
-          };
-          row.appendChild(openBtn);
-          agentListEl.appendChild(row);
-        });
-      }
+      function renderAgents() {}
 
       function showAgentPanel(agent) {
         if (!agent) return;
@@ -1038,11 +1737,12 @@
       }
 
       function hideAgentPanel() {
-        agentPanel.classList.add('hidden');
+        agentPanel.classList.remove('hidden');
       }
 
       function getActiveFile() { return state.files.find(f => f.id === state.activeId); }
 
+<<<<<<< Updated upstream
       async function refreshWorkspaces() {
         if (!authToken) return;
         try {
@@ -1101,10 +1801,19 @@
       }
 
       function selectFile(fileId) {
+=======
+      function selectFile(fileId, options = {}) {
+>>>>>>> Stashed changes
         const file = state.files.find(f => f.id === fileId);
         if (!file) return;
-        flushCurrentFile();
+        if (!options.skipFlush) {
+          flushCurrentFile();
+        }
+        if (!state.openTabs.includes(file.id)) {
+          state.openTabs.push(file.id);
+        }
         state.activeId = file.id;
+<<<<<<< Updated upstream
         if (monacoEditor) {
           const model = monacoEditor.getModel();
           if (model) {
@@ -1114,6 +1823,12 @@
         }
         statusFile.textContent = file.name + ' [' + file.language + ']';
         runOutput.textContent = 'Output will appear here.';
+=======
+        setEditorValue(file.code, file.language);
+        statusFile.textContent = file.name + ' [' + file.language + ']';
+        // Clear stale output from the previous file
+        setRunOutputMessage('Output will appear here.');
+>>>>>>> Stashed changes
         renderFiles();
         updateCursor();
         saveState();
@@ -1125,6 +1840,7 @@
 
       function flushCurrentFile() {
         const file = getActiveFile();
+<<<<<<< Updated upstream
         if (!file) return;
         const currentCode = monacoEditor ? monacoEditor.getValue() : '';
         if (file.code !== currentCode) {
@@ -1135,6 +1851,14 @@
           if (authToken && currentWorkspaceId) {
             saveFileToServer(file);
           }
+=======
+        if (!file || !monacoEditor) return;
+        const editorValue = getEditorValue();
+        if (file.code !== editorValue) {
+          history[file.id].undo.push(file.code);
+          history[file.id].redo = [];
+          file.code = editorValue;
+>>>>>>> Stashed changes
         }
       }
 
@@ -1142,6 +1866,7 @@
         const id = 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2);
         const file = { id, name, language, code: initialCode };
         state.files.push(file);
+        state.openTabs.push(id);
         if (!history[id]) history[id] = {undo: [], redo: []};
         selectFile(id);
         saveState();
@@ -1170,10 +1895,34 @@
         }
       }
 
+      function closeTab(id) {
+        if (!state.openTabs.includes(id)) return;
+        if (state.openTabs.length <= 1) return;
+        state.openTabs = state.openTabs.filter((tabId) => tabId !== id);
+        if (state.activeId === id) {
+          const nextTabId = state.openTabs[state.openTabs.length - 1];
+          state.activeId = nextTabId;
+          renderFiles();
+          selectFile(nextTabId, { skipFlush: true });
+          saveState();
+          return;
+        }
+        renderFiles();
+        saveState();
+      }
+
       function deleteFile(id) {
         state.files = state.files.filter(f => f.id !== id);
+        state.openTabs = state.openTabs.filter((tabId) => tabId !== id);
         delete history[id];
+<<<<<<< Updated upstream
         if (state.activeId === id) state.activeId = state.files.length > 0 ? state.files[0].id : null;
+=======
+        if (state.activeId === id) state.activeId = state.files[0].id;
+        if (state.activeId && !state.openTabs.includes(state.activeId)) {
+          state.openTabs.push(state.activeId);
+        }
+>>>>>>> Stashed changes
         saveState();
         renderFiles();
         if (state.activeId) selectFile(state.activeId);
@@ -1189,6 +1938,7 @@
           monacoEditor.trigger('keyboard', 'undo', null);
           return;
         }
+<<<<<<< Updated upstream
         const file = getActiveFile();
         if (!file || !history[file.id] || !history[file.id].undo.length) return;
         history[file.id].redo.push(file.code);
@@ -1197,6 +1947,10 @@
         if (monacoEditor) monacoEditor.setValue(file.code);
         isUndoRedo = false;
         saveState();
+=======
+        if (usingFallbackEditor) fallbackEditorEl.focus();
+        document.execCommand('undo');
+>>>>>>> Stashed changes
       }
 
       function redo() {
@@ -1204,6 +1958,7 @@
           monacoEditor.trigger('keyboard', 'redo', null);
           return;
         }
+<<<<<<< Updated upstream
         const file = getActiveFile();
         if (!file || !history[file.id] || !history[file.id].redo.length) return;
         history[file.id].undo.push(file.code);
@@ -1212,10 +1967,15 @@
         if (monacoEditor) monacoEditor.setValue(file.code);
         isUndoRedo = false;
         saveState();
+=======
+        if (usingFallbackEditor) fallbackEditorEl.focus();
+        document.execCommand('redo');
+>>>>>>> Stashed changes
       }
 
       function updateCursor() {
         if (monacoEditor) {
+<<<<<<< Updated upstream
           const pos = monacoEditor.getPosition();
           if (pos) {
             cursorPos.textContent = 'Ln ' + pos.lineNumber + ', Col ' + pos.column;
@@ -1237,48 +1997,151 @@
           collaborators[0].col = col;
           renderCollaboratorCursors();
         }
+=======
+          const position = monacoEditor.getPosition();
+          cursorPos.textContent = position
+            ? 'Ln ' + position.lineNumber + ', Col ' + position.column
+            : 'Ln 1, Col 1';
+          return;
+        }
+        if (!usingFallbackEditor) {
+          cursorPos.textContent = 'Ln 1, Col 1';
+          return;
+        }
+        const value = fallbackEditorEl.value.slice(0, fallbackEditorEl.selectionStart);
+        const lines = value.split('\n');
+        const lineNumber = lines.length;
+        const column = (lines[lines.length - 1] || '').length + 1;
+        cursorPos.textContent = 'Ln ' + lineNumber + ', Col ' + column;
+      }
+
+      function getFirstHtmlFile(preferredId) {
+        return state.files.find(file => file.id === preferredId && file.language === 'html')
+          || state.files.find(file => file.language === 'html')
+          || null;
+      }
+
+      function buildPreviewDocument(htmlCode, cssCode = '') {
+        const source = String(htmlCode || TEMPLATES.html);
+        const closingHeadIndex = source.toLowerCase().indexOf('</head>');
+
+        if (closingHeadIndex !== -1) {
+          return source.slice(0, closingHeadIndex)
+            + (cssCode ? '\n<style>\n' + cssCode + '\n</style>\n' : '\n')
+            + source.slice(closingHeadIndex);
+        }
+
+        return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Preview</title>\n'
+          + (cssCode ? '<style>\n' + cssCode + '\n</style>\n' : '')
+          + '</head>\n<body>\n'
+          + source
+          + '\n</body>\n</html>\n';
+      }
+
+      function renderPreview(srcdoc) {
+        runOutput.classList.remove('error-output');
+        runOutput.innerHTML = '';
+        const iframe = document.createElement('iframe');
+        iframe.style.width = '100%';
+        iframe.style.height = '300px';
+        iframe.style.border = '1px solid #444';
+        iframe.setAttribute('sandbox', 'allow-scripts');
+        iframe.srcdoc = srcdoc;
+        runOutput.appendChild(iframe);
+      }
+
+      function openHtmlPreviewWindow(srcdoc, fileName) {
+        if (htmlPreviewWindow && htmlPreviewWindow.closed) {
+          htmlPreviewWindow = null;
+        }
+
+        htmlPreviewWindow = htmlPreviewWindow && !htmlPreviewWindow.closed
+          ? htmlPreviewWindow
+          : window.open('', 'itecify-html-preview', 'width=1100,height=760,resizable=yes,scrollbars=yes');
+
+        if (!htmlPreviewWindow) {
+          setRunOutputMessage('Popup blocked. Allow popups to preview HTML.', true);
+          return false;
+        }
+
+        htmlPreviewWindow.document.open();
+        htmlPreviewWindow.document.write(srcdoc);
+        htmlPreviewWindow.document.close();
+        htmlPreviewWindow.document.title = fileName || 'HTML Preview';
+        htmlPreviewWindow.focus();
+        return true;
+>>>>>>> Stashed changes
       }
 
 
 
-      // runFile: returns a string result and optionally sets runOutput.
-      // When called from runAll, setOutput=false so the caller controls the display.
-      async function runFile(file, setOutput = true) {
+      function promptForProgramInput(file) {
+        if (!file || file.language === 'html' || file.language === 'css') {
+          return '';
+        }
+        return window.prompt(
+          'Program input for ' + file.name + ':\nEnter values exactly as stdin should receive them. Leave blank for no input.',
+          ''
+        );
+      }
+
+      async function runFile(file, inputText = '', setOutput = true) {
         if (!file) {
-          if (setOutput) runOutput.textContent = 'No file selected.';
+          if (setOutput) setRunOutputMessage('No file selected.', true);
           return 'No file selected.';
         }
 
+        clearEditorDiagnostics();
+
         if (file.language === 'html') {
+          const cssCode = state.files
+            .filter(candidate => candidate.language === 'css')
+            .map(candidate => candidate.code)
+            .join('\n\n');
+          const srcdoc = buildPreviewDocument(file.code, cssCode);
           if (setOutput) {
-            runOutput.innerHTML = '';
-            const iframe = document.createElement('iframe');
-            iframe.style.width = '100%';
-            iframe.style.height = '300px';
-            iframe.style.border = '1px solid #444';
-            iframe.srcdoc = file.code;
-            runOutput.appendChild(iframe);
+            const opened = openHtmlPreviewWindow(srcdoc, file.name);
+            setRunOutputMessage(opened
+              ? 'HTML preview opened in a new window.'
+              : 'Popup blocked. Allow popups to preview HTML.', !opened);
           }
-          return '[HTML rendered in iframe]';
+          return '[HTML preview opened in popup]';
         }
 
         if (file.language === 'css') {
-          let styleEl = document.getElementById('itecify-runtime-style');
-          if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = 'itecify-runtime-style';
-            document.head.appendChild(styleEl);
+          const htmlFile = getFirstHtmlFile(state.activeId);
+          const previewHtml = htmlFile ? htmlFile.code : TEMPLATES.html;
+          if (setOutput) renderPreview(buildPreviewDocument(previewHtml, file.code));
+          const msg = htmlFile
+            ? 'CSS rendered in preview using ' + htmlFile.name + '.'
+            : 'CSS rendered in preview using the default HTML starter.';
+          if (setOutput && !htmlFile) {
+            const note = document.createElement('div');
+            note.style.paddingTop = '8px';
+            note.style.color = '#9da5b8';
+            note.textContent = msg;
+            runOutput.appendChild(note);
           }
-          styleEl.textContent = file.code;
-          const msg = 'CSS applied to the UI.';
-          if (setOutput) runOutput.textContent = msg;
           return msg;
         }
 
+<<<<<<< Updated upstream
         if (['js', 'nodejs', 'python', 'rust', 'c', 'cpp', 'csharp', 'php'].includes(file.language)) {
           if (!authToken || !currentWorkspaceId) {
             const msg = 'Login and select workspace to run sandbox code.';
             if (setOutput) runOutput.textContent = msg;
+=======
+        try {
+          const res = await fetch('/api/sandbox/run', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ language:file.language, code:file.code, input: inputText || '' })
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            const msg = 'Run failed: ' + res.status + '\n' + text;
+            if (setOutput) setRunOutputMessage(msg, true);
+>>>>>>> Stashed changes
             return msg;
           }
           try {
@@ -1306,6 +2169,7 @@
           }
         }
 
+<<<<<<< Updated upstream
         if (file.language === 'html') {
           if (setOutput) {
             runOutput.innerHTML = '';
@@ -1329,6 +2193,19 @@
           styleEl.textContent = file.code;
           const msg = 'CSS applied to the UI.';
           if (setOutput) runOutput.textContent = msg;
+=======
+          const data = await res.json();
+          const failed = !data.ok || data.code !== 0;
+          if (failed) {
+            showEditorDiagnostics(data.stderr || data.stdout || '');
+          }
+          const msg = 'exit=' + data.code + '\nstdout:\n' + (data.stdout||'') + '\nstderr:\n' + (data.stderr||'');
+          if (setOutput) setRunOutputMessage(msg, failed);
+          return msg;
+        } catch (err) {
+          const msg = 'Run error: ' + err.message;
+          if (setOutput) setRunOutputMessage(msg, true);
+>>>>>>> Stashed changes
           return msg;
         }
       }
@@ -1336,31 +2213,16 @@
       async function runActive() {
         const file = getActiveFile();
         if (!file) {
-          runOutput.textContent = 'No file selected.';
+          setRunOutputMessage('No file selected.', true);
           return;
         }
         flushCurrentFile();
-        await runFile(file);
-      }
-
-      async function runAll() {
-        flushCurrentFile();
-        let fullOutput = 'Running all files...\n';
-        runOutput.textContent = fullOutput;
-
-        for (const file of state.files) {
-          fullOutput += '\n=== ' + file.name + ' (' + file.language + ') ===\n';
-          runOutput.textContent = fullOutput;
-
-          // Pass setOutput=false so runFile doesn't clobber our accumulated log
-          const fileResult = await runFile(file, false);
-          fullOutput += (fileResult || '') + '\n';
-          runOutput.textContent = fullOutput;
-          await new Promise(resolve => setTimeout(resolve, 50));
+        const inputText = promptForProgramInput(file);
+        if (inputText === null) {
+          setRunOutputMessage('Run cancelled.');
+          return;
         }
-
-        fullOutput += '\nAll files processed.';
-        runOutput.textContent = fullOutput;
+        await runFile(file, inputText);
       }
 
       logoutBtn.onclick = () => {
@@ -1439,7 +2301,7 @@
           return;
         }
         suggestionsEl.textContent = 'Thinking...';
-        runOutput.textContent = 'AI is processing your prompt...';
+        setRunOutputMessage('AI is processing your prompt...');
         try {
           const headers = { 'Content-Type': 'application/json' };
           // Attach browser-stored key as a header if present
@@ -1469,6 +2331,7 @@ If the user asks you to modify the code, respond with ONLY the complete modified
           }
           const data = await res.json();
           const text = data.response || '[No response]';
+<<<<<<< Updated upstream
           
           // Try to extract and apply code block if present
           const codeBlockRegex = /```([a-zA-Z0-9]*)?\s*([\s\S]*?)```/;
@@ -1491,9 +2354,13 @@ If the user asks you to modify the code, respond with ONLY the complete modified
             suggestionsEl.textContent = text;
             runOutput.textContent = 'AI response received.';
           }
+=======
+          suggestionsEl.textContent = text;
+          setRunOutputMessage('AI response received.');
+>>>>>>> Stashed changes
         } catch (err) {
           suggestionsEl.textContent = 'AI error: ' + (err.message || err);
-          runOutput.textContent = 'AI error: ' + (err.message || err);
+          setRunOutputMessage('AI error: ' + (err.message || err), true);
         }
       };
       
@@ -1540,7 +2407,6 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       };
 
       agentPanelSubmitBtn.onclick = () => sendAIPrompt(agentPanelPrompt.value, agentPanelSuggestions);
-      agentPanelHideBtn.onclick = hideAgentPanel;
 
       // In-browser API key management
       const agentSetKeyBtn = document.getElementById('agentSetKeyBtn');
@@ -1562,6 +2428,144 @@ If the user asks you to modify the code, respond with ONLY the complete modified
         refreshKeyStatus();
       };
       refreshKeyStatus();
+      accountBtn.onclick = () => {
+        flushTrackedTime();
+        window.location.href = authToken ? '/account.html' : '/login.html';
+      };
+      loginBtn.onclick = () => { window.location.href = '/login.html'; };
+      function closeMenu() {
+        menuDropdown.classList.remove('show');
+        menuBtn.classList.remove('open');
+      }
+
+      logoutBtn.onclick = () => {
+        closeMenu();
+        flushTrackedTime();
+        authToken = '';
+        currentUser = null;
+        workspaces = [];
+        currentWorkspaceId = '';
+        localStorage.removeItem('itecify-auth-token');
+        localStorage.removeItem('itecify-current-user');
+        localStorage.removeItem('itecify-workspace-id');
+        updateAuthUI();
+        renderWorkspaceMenu();
+        setRunOutputMessage('Logged out.');
+      };
+
+      menuBtn.onclick = (e) => {
+        e.stopPropagation();
+        const shouldOpen = !menuDropdown.classList.contains('show');
+        closeMenu();
+        if (shouldOpen) {
+          menuDropdown.classList.add('show');
+          menuBtn.classList.add('open');
+        }
+      };
+
+      document.addEventListener('click', () => {
+        closeMenu();
+      });
+
+      menuDropdown.onclick = (e) => {
+        e.stopPropagation();
+      };
+
+      homepageBtn.onclick = () => {
+        menuDropdown.classList.remove('show');
+        menuBtn.classList.remove('open');
+        flushTrackedTime();
+        window.location.href = '/login.html';
+      };
+
+      workspaceSelect.onchange = () => {
+        persistCurrentState();
+        currentWorkspaceId = workspaceSelect.value;
+        if (currentWorkspaceId) {
+          localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
+        } else {
+          localStorage.removeItem('itecify-workspace-id');
+        }
+        loadWorkspaceState();
+        setRunOutputMessage(currentWorkspaceId
+          ? 'Workspace changed to ' + (workspaces.find((workspace) => workspace.id === currentWorkspaceId)?.name || currentWorkspaceId)
+          : 'Personal workspace selected.');
+      };
+
+      createWorkspaceBtn.onclick = async () => {
+        closeMenu();
+        if (!authToken) {
+          window.location.href = '/login.html';
+          return;
+        }
+        const name = window.prompt('Workspace name:', 'My Workspace');
+        if (!name || !name.trim()) return;
+
+        try {
+          const res = await fetch('/api/workspaces', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + authToken
+            },
+            body: JSON.stringify({ name: name.trim() })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Create workspace failed');
+          await refreshWorkspaces();
+          currentWorkspaceId = data.workspace?.id || currentWorkspaceId;
+          renderWorkspaceMenu();
+          setRunOutputMessage('Workspace created: ' + (data.workspace?.name || name.trim()));
+        } catch (err) {
+          setRunOutputMessage('Workspace error: ' + err.message, true);
+        }
+      };
+
+      addMemberBtn.onclick = async () => {
+        closeMenu();
+        if (!authToken) {
+          window.location.href = '/login.html';
+          return;
+        }
+        if (!currentWorkspaceId) {
+          setRunOutputMessage('Create a workspace first.', true);
+          return;
+        }
+        const identifier = window.prompt('User username or email to add:');
+        if (!identifier || !identifier.trim()) return;
+
+        try {
+          const res = await fetch('/api/workspaces/' + currentWorkspaceId + '/add-member', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + authToken
+            },
+            body: JSON.stringify({ identifier: identifier.trim() })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Add member failed');
+          setRunOutputMessage('Member added successfully.');
+        } catch (err) {
+          setRunOutputMessage('Workspace error: ' + err.message, true);
+        }
+      };
+
+      window.addEventListener('beforeunload', () => {
+        persistCurrentState();
+        flushTrackedTime();
+      });
+      window.addEventListener('pagehide', persistCurrentState);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          persistCurrentState();
+          flushTrackedTime();
+        }
+      });
+      setInterval(() => {
+        persistCurrentState();
+        flushTrackedTime();
+      }, 30000);
 
       function confirmNewFile(name) {
         if (!name || !name.trim()) {
@@ -1593,6 +2597,7 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       document.getElementById('saveFileBtn').onclick = () => {
         flushCurrentFile();
         saveState();
+<<<<<<< Updated upstream
         const file = getActiveFile();
         if (file && syncRootHandle) {
           syncFileToDisk(file);
@@ -1605,9 +2610,28 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       document.getElementById('downloadFileBtn').onclick = saveAsWithDialog;
 
       document.getElementById('syncFolderBtn').onclick = selectSyncFolder;
+=======
+        setRunOutputMessage('Saved');
+      };
+
+      document.getElementById('downloadFileBtn').onclick = () => {
+        const file = getActiveFile();
+        if (!file) return;
+        persistCurrentState();
+        const blob = new Blob([file.code], { type:'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        const objectUrl = URL.createObjectURL(blob);
+        a.href = objectUrl;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // Revoke the object URL to free memory
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
+      };
+>>>>>>> Stashed changes
 
       document.getElementById('runActiveBtn').onclick = runActive;
-      document.getElementById('runAllBtn').onclick = runAll;
       document.getElementById('undoBtn').onclick = undo;
       document.getElementById('redoBtn').onclick = redo;
 
@@ -1624,6 +2648,7 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       });
 
       // Initialize app
+<<<<<<< Updated upstream
       // Check for auth token, redirect to login if missing
       if (!authToken) {
         window.location.href = '/login.html';
@@ -1650,6 +2675,24 @@ If the user asks you to modify the code, respond with ONLY the complete modified
           selectFile(state.activeId);
         }
       });
+=======
+      (async () => {
+        try {
+          await verifySession();
+          loadState();
+          renderFiles();
+          renderAgents();
+          try {
+            await initMonaco();
+          } catch (editorErr) {
+            initFallbackEditor();
+          }
+          if (state.activeId) selectFile(state.activeId, { skipFlush: true });
+        } catch (err) {
+          setRunOutputMessage('Editor failed to load: ' + (err.message || err), true);
+        }
+      })();
+>>>>>>> Stashed changes
     </script>
   </body>
 </html>

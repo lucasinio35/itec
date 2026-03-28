@@ -1,6 +1,7 @@
 {
   "users": [
     {
+<<<<<<< Updated upstream
       "id": "user-1774690032787-d6a9f435f05148",
       "username": "testuser",
       "email": "test@example.com",
@@ -29,10 +30,23 @@
       "username": "Tudor",
       "email": "d@gmail.com",
       "password": "6e5f7f7503c63f344b7769bbe0942bf56c0d86467fa4c2161dd09649989c8c26"
+=======
+      "id": "user-1774724785474-ff5ca893f6a5f",
+      "username": "codex_probe",
+      "email": "codex_probe@example.com",
+      "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+    },
+    {
+      "id": "user-1774725083602-d6e5f7c9874e28",
+      "username": "lucasinio35",
+      "email": "lucapelin91@gmail.com",
+      "password": "3a889c8e541658fbf7fd86b51b458055db458c3dd0326241bde6ba10d08978a9"
+>>>>>>> Stashed changes
     }
   ],
   "workspaces": [
     {
+<<<<<<< Updated upstream
       "id": "ws-1774690093005-dc66d27b5e0d3",
       "name": "Test Workspace",
       "ownerId": "user-1774690032787-d6a9f435f05148",
@@ -79,6 +93,14 @@
       "createdAt": 1774715177286,
       "updatedAt": 1774715798374,
       "creatorId": "user-1774715130099-c153cac4c2fee"
+=======
+      "id": "ws-1774727322227-eb4fdcaeb796e",
+      "name": "My Workspace",
+      "ownerId": "user-1774725083602-d6e5f7c9874e28",
+      "members": [
+        "user-1774725083602-d6e5f7c9874e28"
+      ]
+>>>>>>> Stashed changes
     }
   ]
 }

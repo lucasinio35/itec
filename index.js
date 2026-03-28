@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const { spawn } = require('child_process');
 const https = require('https');
+<<<<<<< Updated upstream
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
@@ -12,11 +13,15 @@ const encoding = require('lib0/encoding');
 const decoding = require('lib0/decoding');
 const syncProtocol = require('y-protocols/sync');
 const awarenessProtocol = require('y-protocols/awareness');
+=======
+const crypto = require('crypto');
+>>>>>>> Stashed changes
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3002;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const JWT_SECRET = process.env.JWT_SECRET || 'strong-jwt-secret';
+<<<<<<< Updated upstream
 const JWT_EXPIRES_IN = '2h';
 
 const users = [];
@@ -92,12 +97,198 @@ function canAccessWorkspace(userId, workspaceId) {
   if (!workspace) return false;
   return workspace.members.includes(userId);
 }
+=======
+const DATABASE_FILE = path.join(__dirname, 'database.json');
+const users = [];
+const workspaces = [];
+>>>>>>> Stashed changes
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static('public'));
 
+function loadDatabase() {
+  try {
+    if (!fs.existsSync(DATABASE_FILE)) return;
+    const parsed = JSON.parse(fs.readFileSync(DATABASE_FILE, 'utf8'));
+    users.length = 0;
+    users.push(...(parsed.users || []));
+    workspaces.length = 0;
+    workspaces.push(...(parsed.workspaces || []));
+  } catch (err) {
+    console.warn('database load failed', err.message);
+  }
+}
+
+function saveDatabase() {
+  try {
+    fs.writeFileSync(DATABASE_FILE, JSON.stringify({ users, workspaces }, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('database save failed', err.message);
+  }
+}
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function sanitizeUser(user) {
+  return { id: user.id, username: user.username, email: user.email };
+}
+
+function encodeBase64Url(value) {
+  return Buffer.from(value).toString('base64url');
+}
+
+function decodeBase64Url(value) {
+  return Buffer.from(value, 'base64url').toString('utf8');
+}
+
+function signTokenPayload(payload) {
+  return crypto
+    .createHmac('sha256', JWT_SECRET)
+    .update(payload)
+    .digest('base64url');
+}
+
+function generateToken(user) {
+  const payload = {
+    ...sanitizeUser(user),
+    exp: Date.now() + (2 * 60 * 60 * 1000)
+  };
+  const encoded = encodeBase64Url(JSON.stringify(payload));
+  return encoded + '.' + signTokenPayload(encoded);
+}
+
+function verifyToken(token) {
+  const [encoded, signature] = String(token || '').split('.');
+  if (!encoded || !signature) throw new Error('Malformed token');
+  const expected = signTokenPayload(encoded);
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    throw new Error('Invalid token signature');
+  }
+  const payload = JSON.parse(decodeBase64Url(encoded));
+  if (!payload.exp || Date.now() > payload.exp) {
+    throw new Error('Token expired');
+  }
+  return payload;
+}
+
+function authenticateJWT(req, res, next) {
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authorization header missing or invalid' });
+  }
+  try {
+    req.user = verifyToken(authHeader.slice(7));
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+function canAccessWorkspace(userId, workspaceId) {
+  const workspace = workspaces.find((candidate) => candidate.id === workspaceId);
+  return Boolean(workspace && workspace.members.includes(userId));
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'itecify-sandbox', port: PORT });
+});
+
+app.get('/api/auth/me', authenticateJWT, (req, res) => {
+  const user = users.find((candidate) => candidate.id === req.user.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ user: sanitizeUser(user) });
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const { username, email, password } = req.body || {};
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'username, email and password are required' });
+  }
+  if (users.some((user) => user.username === username || user.email === email)) {
+    return res.status(409).json({ error: 'User already exists' });
+  }
+
+  const user = {
+    id: 'user-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+    username,
+    email,
+    password: hashPassword(password)
+  };
+  users.push(user);
+  saveDatabase();
+  res.json({ message: 'Registered', token: generateToken(user), user: sanitizeUser(user) });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) {
+    return res.status(400).json({ error: 'username and password are required' });
+  }
+
+  const user = users.find((candidate) => candidate.username === username || candidate.email === username);
+  if (!user || user.password !== hashPassword(password)) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  res.json({ message: 'Logged in', token: generateToken(user), user: sanitizeUser(user) });
+});
+
+app.get('/api/workspaces', authenticateJWT, (req, res) => {
+  const visible = workspaces.filter((workspace) => workspace.members.includes(req.user.id));
+  res.json({ workspaces: visible });
+});
+
+app.post('/api/workspaces', authenticateJWT, (req, res) => {
+  const name = String(req.body?.name || '').trim();
+  if (!name) return res.status(400).json({ error: 'Workspace name is required' });
+
+  const workspace = {
+    id: 'ws-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+    name,
+    ownerId: req.user.id,
+    members: [req.user.id]
+  };
+  workspaces.push(workspace);
+  saveDatabase();
+  res.json({ message: 'Workspace created', workspace });
+});
+
+app.post('/api/workspaces/:workspaceId/add-member', authenticateJWT, (req, res) => {
+  const workspace = workspaces.find((candidate) => candidate.id === req.params.workspaceId);
+  const identifier = String(req.body?.identifier || '').trim();
+
+  if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+  if (workspace.ownerId !== req.user.id) {
+    return res.status(403).json({ error: 'Only the workspace owner can add members' });
+  }
+  if (!identifier) return res.status(400).json({ error: 'identifier is required' });
+
+  const userToAdd = users.find((candidate) => candidate.username === identifier || candidate.email === identifier);
+  if (!userToAdd) return res.status(404).json({ error: 'User not found' });
+
+  if (!workspace.members.includes(userToAdd.id)) {
+    workspace.members.push(userToAdd.id);
+    saveDatabase();
+  }
+
+  res.json({ message: 'Member added', workspace });
+});
+
+app.get('/api/workspaces/:workspaceId/members', authenticateJWT, (req, res) => {
+  const workspace = workspaces.find((candidate) => candidate.id === req.params.workspaceId);
+  if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+  if (!canAccessWorkspace(req.user.id, workspace.id)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const members = workspace.members
+    .map((memberId) => users.find((candidate) => candidate.id === memberId))
+    .filter(Boolean)
+    .map(sanitizeUser);
+
+  res.json({ members });
 });
 
 app.post('/api/ai', async (req, res) => {
@@ -414,11 +605,12 @@ const IS_WINDOWS = process.platform === 'win32';
 // On Windows, GCC/G++/rustc automatically append .exe to output files with no extension
 const EXE_EXT = IS_WINDOWS ? '.exe' : '';
 
-function runCommand(lang, code) {
+function runCommand(lang, code, stdinInput = '') {
   return new Promise((resolve) => {
     let proc;
     let tempFiles = [];
     let finished = false;
+    const normalizedInput = typeof stdinInput === 'string' ? stdinInput : String(stdinInput ?? '');
 
     const done = (err, stdout, stderr, exitCode) => {
       if (finished) return;
@@ -436,11 +628,25 @@ function runCommand(lang, code) {
       }, EXEC_TIMEOUT_MS);
     };
 
+    const attachStdin = (childProc) => {
+      if (!childProc?.stdin) return;
+      if (!normalizedInput) {
+        childProc.stdin.end();
+        return;
+      }
+      childProc.stdin.write(normalizedInput);
+      if (!normalizedInput.endsWith('\n')) {
+        childProc.stdin.write('\n');
+      }
+      childProc.stdin.end();
+    };
+
     const attachRunProcess = (exePath) => {
       // shell:true needed on Windows to execute binaries in arbitrary temp paths
-      const run = spawn(exePath, [], { stdio: ['ignore', 'pipe', 'pipe'], shell: IS_WINDOWS });
+      const run = spawn(exePath, [], { stdio: ['pipe', 'pipe', 'pipe'], shell: IS_WINDOWS });
       const timer = killOnTimeout(run, 'execution');
       let out = '', err = '';
+      attachStdin(run);
       run.stdout.on('data', d => out += d.toString());
       run.stderr.on('data', d => err += d.toString());
       run.on('error', (e) => { clearTimeout(timer); done(e, '', e.message, 500); });
@@ -448,7 +654,7 @@ function runCommand(lang, code) {
     };
 
     if (lang === 'nodejs') {
-      proc = spawn('node', ['-e', code], { stdio: ['ignore', 'pipe', 'pipe'] });
+      proc = spawn('node', ['-e', code], { stdio: ['pipe', 'pipe', 'pipe'] });
     } else if (lang === 'python') {
       // Try python aliases in order; self-contained with return so it never
       // conflicts with the fall-through bottom listener block.
@@ -457,9 +663,10 @@ function runCommand(lang, code) {
         if (idx >= pyAliases.length) {
           return done(null, '', 'Python interpreter not found. Install Python and ensure it is in PATH.', 1);
         }
-        const p = spawn(pyAliases[idx], ['-c', code], { stdio: ['ignore', 'pipe', 'pipe'] });
+        const p = spawn(pyAliases[idx], ['-c', code], { stdio: ['pipe', 'pipe', 'pipe'] });
         let out = '', errStr = '';
         const t = killOnTimeout(p, pyAliases[idx]);
+        attachStdin(p);
         p.stdout.on('data', d => out += d.toString());
         p.stderr.on('data', d => errStr += d.toString());
         p.on('error', (e) => {
@@ -512,9 +719,10 @@ function runCommand(lang, code) {
       proc.on('error', (e) => done(e, '', e.message, 500));
       proc.on('close', (status) => {
         if (status !== 0) return done(null, '', compileStderr || 'mcs compile failed', status);
-        const run = spawn('mono', [dll], { stdio: ['ignore', 'pipe', 'pipe'] });
+        const run = spawn('mono', [dll], { stdio: ['pipe', 'pipe', 'pipe'] });
         const timer = killOnTimeout(run, 'mono execution');
         let out = '', err = '';
+        attachStdin(run);
         run.stdout.on('data', d => out += d.toString());
         run.stderr.on('data', d => err += d.toString());
         run.on('error', (e) => { clearTimeout(timer); done(e, '', e.message, 500); });
@@ -529,6 +737,7 @@ function runCommand(lang, code) {
 
     let stdout = '', stderr = '';
     const timer = killOnTimeout(proc, lang);
+    attachStdin(proc);
     proc.stdout.on('data', chunk => stdout += chunk.toString());
     proc.stderr.on('data', chunk => stderr += chunk.toString());
     proc.on('error', (e) => { clearTimeout(timer); done(e, '', e.message, 500); });
@@ -543,14 +752,21 @@ function sanitizeInput(code) {
   return code;
 }
 
+<<<<<<< Updated upstream
 app.post('/api/sandbox/run', authenticateJWT, async (req, res) => {
   const { language, code, workspaceId } = req.body || {};
   if (!language || !code || !workspaceId) return res.status(400).json({ error: 'language, code and workspaceId are required' });
   if (!canAccessWorkspace(req.user.id, workspaceId)) {
     return res.status(403).json({ error: 'User not part of workspace' });
   }
+=======
+app.post('/api/sandbox/run', async (req, res) => {
+  const { language, code, input } = req.body || {};
+  if (!language || !code) return res.status(400).json({ error: 'language and code required' });
+>>>>>>> Stashed changes
   const clean = sanitizeInput(code);
-  const result = await runCommand(language, clean);
+  const cleanInput = sanitizeInput(typeof input === 'string' ? input : '');
+  const result = await runCommand(language, clean, cleanInput);
   res.json(result);
 });
 
@@ -588,6 +804,7 @@ app.post('/api/sandbox/run/chain', authenticateJWT, async (req, res) => {
   res.end();
 });
 
+<<<<<<< Updated upstream
 // Create HTTP server and attach WebSocket server
 const server = http.createServer(app);
 
@@ -887,4 +1104,9 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`✓ WebSocket available on ws://localhost:${PORT}/yjs/{workspaceId}/{fileId}`);
   console.log(`  From another PC: http://${localIP}:${PORT}`);
   console.log(`  WebSocket from other PC: ws://${localIP}:${PORT}/yjs/{workspaceId}/{fileId}`);
+=======
+app.listen(PORT, () => {
+  loadDatabase();
+  console.log(`itecify sandbox listening http://localhost:${PORT}`);
+>>>>>>> Stashed changes
 });
