@@ -614,8 +614,9 @@ server.on('upgrade', (request, socket, head) => {
     }
     
     // Verify JWT token
+    let decoded;
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET);
       request.user = decoded;
     } catch (err) {
       console.warn('WebSocket auth failed:', err.message);

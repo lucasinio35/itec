@@ -41,31 +41,13 @@
   ],
   "files": [
     {
-      "id": "file-1774706146145-ed98b82b271c6",
-      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
-      "name": "monaco.html",
-      "language": "html",
+      "id": "file-1774708405819-7875c6ff8a23e",
+      "workspaceId": "ws-1774690093005-dc66d27b5e0d3",
+      "name": "dont.js",
+      "language": "nodejs",
       "code": "",
-      "createdAt": 1774706146145,
-      "updatedAt": 1774708266193
-    },
-    {
-      "id": "file-1774707318875-92573c9033bb88",
-      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
-      "name": "click.js",
-      "language": "nodejs",
-      "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
-      "createdAt": 1774707318875,
-      "updatedAt": 1774708266210
-    },
-    {
-      "id": "file-1774707405821-95e7e860cd648",
-      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
-      "name": "too.js",
-      "language": "nodejs",
-      "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
-      "createdAt": 1774707405821,
-      "updatedAt": 1774708266228
+      "createdAt": 1774708405819,
+      "updatedAt": 1774709285688
     }
   ]
 }
