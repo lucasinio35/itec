@@ -17,6 +17,7 @@ const JWT_EXPIRES_IN = '2h';
 
 const users = [];
 const workspaces = [];  // {id, name, ownerId, members:[userId]}
+const files = [];       // {id, workspaceId, name, language, code, createdAt, updatedAt}
 
 const DATABASE_FILE = path.join(__dirname, 'database.json');
 
@@ -32,7 +33,9 @@ function loadDatabase() {
       users.push(...(parsed.users || []));
       workspaces.length = 0;
       workspaces.push(...(parsed.workspaces || []));
-      console.log(`✓ Database loaded: ${users.length} users, ${workspaces.length} workspaces`);
+      files.length = 0;
+      files.push(...(parsed.files || []));
+      console.log(`✓ Database loaded: ${users.length} users, ${workspaces.length} workspaces, ${files.length} files`);
     } else {
       console.log('ℹ No database file found, starting fresh');
     }
@@ -43,7 +46,7 @@ function loadDatabase() {
 
 function saveDatabase() {
   try {
-    const data = JSON.stringify({ users, workspaces }, null, 2);
+    const data = JSON.stringify({ users, workspaces, files }, null, 2);
     fs.writeFileSync(DATABASE_FILE, data, 'utf8');
   } catch (err) {
     console.error('✗ Error saving database:', err.message);
@@ -247,6 +250,130 @@ app.get('/api/workspaces/:workspaceId/members', authenticateJWT, (req, res) => {
   
   res.json({ members });
 });
+
+// ============ FILE API ============
+
+// List files in a workspace
+app.get('/api/workspaces/:workspaceId/files', authenticateJWT, (req, res) => {
+  const workspace = workspaces.find((w) => w.id === req.params.workspaceId);
+  if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+  if (!canAccessWorkspace(req.user.id, workspace.id)) return res.status(403).json({ error: 'Forbidden' });
+  
+  const workspaceFiles = files.filter(f => f.workspaceId === req.params.workspaceId);
+  res.json({ files: workspaceFiles });
+});
+
+// Create a new file
+app.post('/api/workspaces/:workspaceId/files', authenticateJWT, (req, res) => {
+  const workspace = workspaces.find((w) => w.id === req.params.workspaceId);
+  if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+  if (!canAccessWorkspace(req.user.id, workspace.id)) return res.status(403).json({ error: 'Forbidden' });
+  
+  const { name, language, code } = req.body || {};
+  if (!name) return res.status(400).json({ error: 'File name is required' });
+  
+  const file = {
+    id: 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+    workspaceId: req.params.workspaceId,
+    name: name.trim(),
+    language: language || 'nodejs',
+    code: code || '',
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+  
+  files.push(file);
+  saveDatabase();
+  
+  // Broadcast to all connected clients in this workspace via WebSocket
+  broadcastToWorkspace(workspace.id, {
+    type: 'file-created',
+    file: file
+  });
+  
+  res.json({ message: 'File created', file });
+});
+
+// Get a single file
+app.get('/api/files/:fileId', authenticateJWT, (req, res) => {
+  const file = files.find((f) => f.id === req.params.fileId);
+  if (!file) return res.status(404).json({ error: 'File not found' });
+  
+  if (!canAccessWorkspace(req.user.id, file.workspaceId)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  
+  res.json({ file });
+});
+
+// Update a file
+app.put('/api/files/:fileId', authenticateJWT, (req, res) => {
+  const file = files.find((f) => f.id === req.params.fileId);
+  if (!file) return res.status(404).json({ error: 'File not found' });
+  
+  if (!canAccessWorkspace(req.user.id, file.workspaceId)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  
+  const { name, language, code } = req.body || {};
+  
+  if (name !== undefined) file.name = name.trim();
+  if (language !== undefined) file.language = language;
+  if (code !== undefined) file.code = code;
+  file.updatedAt = Date.now();
+  
+  saveDatabase();
+  
+  // Broadcast update to all connected clients in this workspace
+  broadcastToWorkspace(file.workspaceId, {
+    type: 'file-updated',
+    file: { ...file }
+  });
+  
+  res.json({ message: 'File updated', file });
+});
+
+// Delete a file
+app.delete('/api/files/:fileId', authenticateJWT, (req, res) => {
+  const fileIndex = files.findIndex((f) => f.id === req.params.fileId);
+  if (fileIndex === -1) return res.status(404).json({ error: 'File not found' });
+  
+  const file = files[fileIndex];
+  
+  if (!canAccessWorkspace(req.user.id, file.workspaceId)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  
+  const workspaceId = file.workspaceId;
+  files.splice(fileIndex, 1);
+  saveDatabase();
+  
+  // Broadcast deletion to all connected clients in this workspace
+  broadcastToWorkspace(workspaceId, {
+    type: 'file-deleted',
+    fileId: req.params.fileId
+  });
+  
+  res.json({ message: 'File deleted' });
+});
+
+// Helper: broadcast message to all WebSocket clients in a workspace
+function broadcastToWorkspace(workspaceId, message) {
+  yjs_rooms.forEach((clients, roomId) => {
+    // roomId format: "workspaceId/fileId"
+    if (roomId.startsWith(workspaceId + '/')) {
+      clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(message));
+          } catch (err) {
+            console.warn('Broadcast error:', err.message);
+          }
+        }
+      });
+    }
+  });
+}
 
 function withTempFile(ext, content) {
   const name = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
