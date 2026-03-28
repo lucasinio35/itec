@@ -6,6 +6,8 @@ const { spawn } = require('child_process');
 const https = require('https');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { WebSocketServer } = require('ws');
+const http = require('http');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3002;
@@ -17,6 +19,9 @@ const users = [];
 const workspaces = [];  // {id, name, ownerId, members:[userId]}
 
 const DATABASE_FILE = path.join(__dirname, 'database.json');
+
+// Yjs WebSocket storage: {`${workspaceId}/${fileId}`: Set of clients}
+const yjs_rooms = new Map();
 
 function loadDatabase() {
   try {
@@ -230,6 +235,19 @@ app.get('/api/workspaces', authenticateJWT, (req, res) => {
   res.json({ workspaces: mine });
 });
 
+app.get('/api/workspaces/:workspaceId/members', authenticateJWT, (req, res) => {
+  const workspace = workspaces.find((w) => w.id === req.params.workspaceId);
+  if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+  if (!canAccessWorkspace(req.user.id, workspace.id)) return res.status(403).json({ error: 'Forbidden' });
+  
+  const members = workspace.members.map(userId => {
+    const user = users.find(u => u.id === userId);
+    return user ? { id: user.id, username: user.username, email: user.email } : null;
+  }).filter(Boolean);
+  
+  res.json({ members });
+});
+
 function withTempFile(ext, content) {
   const name = `itecify-${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
   const filePath = path.join(os.tmpdir(), name);
@@ -420,7 +438,82 @@ app.post('/api/sandbox/run/chain', authenticateJWT, async (req, res) => {
   res.end();
 });
 
-app.listen(PORT, () => {
+// Create HTTP server and attach WebSocket server
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server, path: '/yjs/:workspaceId/:fileId' });
+
+// WebSocket connection handler for Yjs synchronization
+wss.on('connection', (ws, req) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathParts = url.pathname.split('/');
+  const workspaceId = pathParts[2];
+  const fileId = pathParts[3];
+  const token = url.searchParams.get('token');
+
+  if (!workspaceId || !fileId || !token) {
+    console.warn('WebSocket: Missing required parameters');
+    ws.close(1008, 'Missing parameters');
+    return;
+  }
+
+  // Verify token
+  try {
+    jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    console.warn('WebSocket: Invalid token');
+    ws.close(1008, 'Invalid token');
+    return;
+  }
+
+  const roomId = `${workspaceId}/${fileId}`;
+  
+  if (!yjs_rooms.has(roomId)) {
+    yjs_rooms.set(roomId, new Set());
+  }
+  yjs_rooms.get(roomId).add(ws);
+
+  console.log(`✓ WebSocket connected: ${roomId} (${yjs_rooms.get(roomId).size} clients)`);
+
+  ws.on('message', (data) => {
+    // Broadcast Yjs updates to all clients in the room
+    const room = yjs_rooms.get(roomId);
+    if (room) {
+      room.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(data);
+          } catch (err) {
+            console.warn('Error sending message:', err.message);
+          }
+        }
+      });
+    }
+  });
+
+  ws.on('close', () => {
+    const room = yjs_rooms.get(roomId);
+    if (room) {
+      room.delete(ws);
+      console.log(`✓ WebSocket closed: ${roomId} (${room.size} clients remaining)`);
+      if (room.size === 0) {
+        yjs_rooms.delete(roomId);
+      }
+    }
+  });
+
+  ws.on('error', (err) => {
+    console.warn('WebSocket error:', err.message);
+  });
+});
+
+server.listen(PORT, '0.0.0.0', () => {
   loadDatabase();
-  console.log(`itecify sandbox listening http://localhost:${PORT}`);
+  const localIP = Object.values(require('os').networkInterfaces())
+    .flat()
+    .filter(addr => addr.family === 'IPv4' && !addr.internal)
+    .map(addr => addr.address)[0] || 'localhost';
+  console.log(`✓ itecify sandbox listening on http://localhost:${PORT}`);
+  console.log(`✓ WebSocket available on ws://localhost:${PORT}/yjs/{workspaceId}/{fileId}`);
+  console.log(`  From another PC: http://${localIP}:${PORT}`);
+  console.log(`  WebSocket from other PC: ws://${localIP}:${PORT}/yjs/{workspaceId}/{fileId}`);
 });

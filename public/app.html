@@ -7,37 +7,38 @@
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
-      body { margin:0; font-family: Segoe UI, Roboto, Arial, sans-serif; background:#1e1e1e; color:#ddd; min-height:100vh; }
-      .container { display:grid; grid-template-rows:auto 1fr; height:100vh; }
-      .top { background:#252526; border-bottom:1px solid #333; padding:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-      .top h1 { margin:0; font-size:16px; color:#fff; }
+      html, body { overflow-x: hidden; max-width: 100vw; }
+      body { margin:0; font-family: Segoe UI, Roboto, Arial, sans-serif; background:#1e1e1e; color:#ddd; min-height:100vh; overflow-x: hidden; }
+      .container { display:grid; grid-template-rows:auto 1fr; height:100vh; overflow: hidden; }
+      .top { background:#252526; border-bottom:1px solid #333; padding:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; overflow-x:auto; }
+      .top h1 { margin:0; font-size:16px; color:#fff; white-space:nowrap; }
       .top .controls { display:inline-flex; gap:8px; flex-wrap:wrap; }
-      .top button, .top select, .top input { background:#2a2a2f; border:1px solid #444; color:#eee; border-radius:4px; padding:5px 8px; font-size:13px; cursor:pointer; }
+      .top button, .top select, .top input { background:#2a2a2f; border:1px solid #444; color:#eee; border-radius:4px; padding:5px 8px; font-size:13px; cursor:pointer; white-space:nowrap; }
       .top button:hover, .top select:hover { background:#353540; }
-      .main { display:grid; grid-template-columns:220px 1fr; min-height:0; }
-      .sidebar { background:#20202a; border-right:1px solid #333; display:flex; flex-direction:column; min-height:0; }
-      .panel-title { font-size:11px; color:#a0a7b0; text-transform:uppercase; padding:8px; border-bottom:1px solid #333; margin:0; }
+      .main { display:grid; grid-template-columns:220px 1fr; min-height:0; overflow: hidden; }
+      .sidebar { background:#20202a; border-right:1px solid #333; display:flex; flex-direction:column; min-height:0; overflow: hidden; max-width: 220px; }
+      .panel-title { font-size:11px; color:#a0a7b0; text-transform:uppercase; padding:8px; border-bottom:1px solid #333; margin:0; white-space:nowrap; }
       .file-list, .agent-list { overflow:auto; padding:6px; flex:1; }
-      .file-item, .agent-item { background:#2b2c33; color:#e1e1e1; margin-bottom:6px; border-radius:4px; border:1px solid #3c3d46; padding:6px 8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; font-size:13px; }
-      .file-item span, .agent-item span { flex:1; }
-      .file-item button, .agent-item button { background:#3a3a40; border:1px solid #555; color:#ccc; border-radius:3px; padding:2px 6px; font-size:11px; cursor:pointer; }
+      .file-item, .agent-item { background:#2b2c33; color:#e1e1e1; margin-bottom:6px; border-radius:4px; border:1px solid #3c3d46; padding:6px 8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; font-size:13px; overflow:hidden; }
+      .file-item span, .agent-item span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .file-item button, .agent-item button { background:#3a3a40; border:1px solid #555; color:#ccc; border-radius:3px; padding:2px 6px; font-size:11px; cursor:pointer; flex-shrink:0; }
       .file-item button:hover, .agent-item button:hover { background:#454550; }
       .file-item.active, .agent-item.active { border-color:#5f9cff; background:#32354e; }
-      .agent-panel { background:#252536; border:1px solid #444; border-radius:6px; margin:8px 6px 0px 6px; padding:8px; }
+      .agent-panel { background:#252536; border:1px solid #444; border-radius:6px; margin:8px 6px 0px 6px; padding:8px; overflow:hidden; }
       .agent-panel.hidden { display:none; }
-      .agent-panel h3 { margin:0 0 8px 0; font-size:12px; color:#fff; }
+      .agent-panel h3 { margin:0 0 8px 0; font-size:12px; color:#fff; white-space:nowrap; }
       .agent-panel textarea { width:100%; height:70px; margin-bottom:6px; background:#1f2132; border:1px solid #444; color:#eee; padding:6px; font-family:Consolas, Monaco, monospace; font-size:12px; }
       .agent-panel .agent-suggestions { background:#1b1c28; border:1px solid #444; border-radius:4px; padding:6px; color:#c8d0e0; font-size:12px; height:110px; overflow:auto; white-space:pre-wrap; }
       .agent-panel .agent-buttons { display:flex; gap:6px; margin-top:8px; }
       .agent-panel .agent-buttons button { flex:1; background:#2a2a3a; border:1px solid #444; color:#eee; border-radius:4px; padding:6px; font-size:12px; cursor:pointer; }
-      .editor-wrap { display:flex; flex-direction:column; min-height:0; }
-      .tabbar { background:#1f1f24; display:flex; border-bottom:1px solid #333; }
-      .tab { cursor:pointer; color:#ccc; padding:8px 10px; font-size:13px; border-right:1px solid #2f2f3b; }
+      .editor-wrap { display:flex; flex-direction:column; min-height:0; overflow: hidden; flex:1; }
+      .tabbar { background:#1f1f24; display:flex; border-bottom:1px solid #333; overflow-x:auto; }
+      .tab { cursor:pointer; color:#ccc; padding:8px 10px; font-size:13px; border-right:1px solid #2f2f3b; white-space:nowrap; flex-shrink:0; }
       .tab:hover { background:#2a2a33; }
       .tab.active { background:#2c2f45; color:#fff; border-bottom:3px solid #5f9cff; }
-      #codeEditor { flex:1; width:100%; height:100%; border:none; outline:none; background:#11131a; color:#e8ebff; padding:12px; resize:none; font-family:Consolas, Monaco, monospace; font-size:13px; line-height:1.45; }
-      .status { background:#16171f; border-top:1px solid #333; color:#9da5b8; padding:6px 10px; display:flex; justify-content:space-between; font-size:12px; }
-      .output { background:#101118; color:#c8d0e0; border-top:1px solid #333; padding:10px; font-family:Consolas, Monaco, monospace; font-size:12px; overflow:auto; height:170px; white-space:pre-wrap; }
+      #codeEditor { flex:1; min-height:0; overflow: hidden; }
+      .status { background:#16171f; border-top:1px solid #333; color:#9da5b8; padding:6px 10px; display:flex; justify-content:space-between; font-size:12px; overflow:hidden; }
+      .output { background:#101118; color:#c8d0e0; border-top:1px solid #333; padding:10px; font-family:Consolas, Monaco, monospace; font-size:12px; overflow:auto; height:170px; white-space:pre-wrap; max-width:100%; }
       .hidden { display:none; }
       .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:1000; }
       .modal { background:#1e1e1e; border:1px solid #444; border-radius:8px; padding:20px; width:90%; max-width:600px; max-height:80vh; overflow:auto; }
@@ -56,6 +57,10 @@
       .file-new-hint.err { color:#ff7f7f; }
       @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.30/dist/yjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/y-websocket@3.0.0/dist/y-websocket.min.js"></script>
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   </head>
   <body>
     <div class="container">
@@ -100,7 +105,7 @@
         </aside>
         <section class="editor-wrap">
           <div class="tabbar" id="tabBar"></div>
-          <textarea id="codeEditor" spellcheck="false"></textarea>
+          <div id="codeEditor" style="flex:1;min-height:0;"></div>
           <div class="status"><span id="statusFile">No file selected</span><span id="cursorPos">Ln 1, Col 1</span></div>
           <div class="status" id="multiCursorStatus">Collaborators: <span id="multiCursorList">None</span></div>
           <div class="output" id="runOutput">Output will appear here.</div>
@@ -129,7 +134,7 @@
       const fileUpload = document.getElementById('fileUpload');
       const fileListEl = document.getElementById('fileList');
       const tabBarEl = document.getElementById('tabBar');
-      const codeEditor = document.getElementById('codeEditor');
+      const codeEditorContainer = document.getElementById('codeEditor');
       const statusFile = document.getElementById('statusFile');
       const cursorPos = document.getElementById('cursorPos');
       const runOutput = document.getElementById('runOutput');
@@ -146,40 +151,169 @@
       const agentPanelSubmitBtn = document.getElementById('agentPanelSubmitBtn');
       const agentPanelHideBtn = document.getElementById('agentPanelHideBtn');
 
+      let monacoEditor = null;
+
+      function getMonacoLanguage(lang) {
+        const map = { nodejs:'javascript', python:'python', rust:'rust', c:'c', cpp:'cpp', csharp:'csharp', html:'html', css:'css', js:'javascript' };
+        return map[lang] || 'plaintext';
+      }
+
+      function initMonaco() {
+        return new Promise((resolve) => {
+          require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+          require(['vs/editor/editor.main'], function () {
+            monacoEditor = monaco.editor.create(codeEditorContainer, {
+              value: '',
+              language: 'javascript',
+              theme: 'vs-dark',
+              automaticLayout: true,
+              fontSize: 14,
+              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+              minimap: { enabled: true },
+              scrollBeyondLastLine: false,
+              renderWhitespace: 'selection',
+              tabSize: 2,
+              insertSpaces: true,
+              wordWrap: 'off',
+              lineNumbers: 'on',
+              glyphMargin: true,
+              folding: true,
+              lineDecorationsWidth: 10,
+              lineNumbersMinChars: 3
+            });
+
+            monacoEditor.onDidChangeModelContent(() => {
+              if (!state.activeId) return;
+              const file = getActiveFile();
+              if (!file) return;
+              const newCode = monacoEditor.getValue();
+              if (file.code !== newCode) {
+                file.code = newCode;
+                clearTimeout(undoDebounceTimer);
+                undoDebounceTimer = setTimeout(() => {
+                  history[file.id].undo.push(newCode);
+                  history[file.id].redo = [];
+                }, 500);
+                saveState();
+                broadcastFileUpdate(file);
+              }
+            });
+
+            monacoEditor.onDidChangeCursorPosition((e) => {
+              cursorPos.textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column;
+              if (collaborators.length > 0) {
+                collaborators[0].line = e.position.lineNumber;
+                collaborators[0].col = e.position.column;
+                renderCollaboratorCursors();
+              }
+            });
+
+            monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+              flushCurrentFile();
+              saveState();
+              runOutput.textContent = 'Saved';
+            });
+
+            monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ, () => undo());
+            monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyY, () => redo());
+
+            resolve();
+          });
+        });
+      }
+
       function getLanguageFromExtension(filename) {
         const ext = filename.split('.').pop().toLowerCase();
         const extMap = { 'js':'nodejs', 'mjs':'nodejs', 'jsx':'nodejs', 'py':'python', 'rs':'rust', 'c':'c', 'cpp':'cpp', 'cc':'cpp', 'cxx':'cpp', 'cs':'csharp', 'html':'html', 'htm':'html', 'css':'css' };
         return extMap[ext] || 'nodejs';
       }
 
-      const collaborators = [
-        { id: 'local', name: 'Ana (you)', color: '#6cf', line: 1, col: 1, isAI: false },
-        { id: 'remote', name: 'Radu', color: '#9af', line: 1, col: 1, isAI: false },
-        { id: 'ai', name: 'AI Agent', color: '#f9a', line: 1, col: 1, isAI: true },
-      ];
+      let collaborators = [];
+      const COLOR_SCHEMES = {
+        local: '#6cf',      // Green for "you"
+        remote: ['#5fa1ff', '#5dd9ff', '#60d8a9', '#ffa06d', '#e89af9'], // Blue shades for other members
+        ai: '#f9a'          // Pink for AI Agent
+      };
+      let remoteColorIndex = 0;
 
       const multiCursorList = document.getElementById('multiCursorList');
 
+      async function loadCollaborators() {
+        if (!currentWorkspaceId || !authToken) {
+          collaborators = [{ id: 'ai', name: 'AI Agent', color: COLOR_SCHEMES.ai, line: 1, col: 1, isAI: true }];
+          renderCollaboratorCursors();
+          return;
+        }
+        
+        try {
+          const resp = await fetch(`/api/workspaces/${currentWorkspaceId}/members`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          const data = await resp.json();
+          collaborators = [];
+          
+          // Add workspace members with color coding
+          remoteColorIndex = 0;
+          if (Array.isArray(data.members)) {
+            data.members.forEach(member => {
+              const isLocalUser = currentUser && currentUser.id === member.id;
+              collaborators.push({
+                id: member.id,
+                name: isLocalUser ? `${member.username} (you)` : member.username,
+                color: isLocalUser ? COLOR_SCHEMES.local : COLOR_SCHEMES.remote[remoteColorIndex % COLOR_SCHEMES.remote.length],
+                line: 1,
+                col: 1,
+                isAI: false
+              });
+              if (!isLocalUser) remoteColorIndex++;
+            });
+          }
+          
+          // Add AI Agent at the end
+          collaborators.push({
+            id: 'ai',
+            name: 'AI Agent',
+            color: COLOR_SCHEMES.ai,
+            line: 1,
+            col: 1,
+            isAI: true
+          });
+          
+          renderCollaboratorCursors();
+        } catch (err) {
+          console.warn('Failed to load collaborators:', err);
+          collaborators = [{ id: 'ai', name: 'AI Agent', color: COLOR_SCHEMES.ai, line: 1, col: 1, isAI: true }];
+          renderCollaboratorCursors();
+        }
+      }
+
       function renderCollaboratorCursors() {
         multiCursorList.innerHTML = collaborators
-          .map(c => `<span style="color:${c.color}; padding-right:12px">${c.name}: Ln ${c.line}, Col ${c.col}${c.isAI ? ' (AI)' : ''}</span>`)
+          .map(c => {
+            const type = c.isAI ? ' (AI)' : (c.id === 'local' ? ' (local)' : ' (member)');
+            return `<span style="color:${c.color}; padding-right:12px; font-weight:500">${c.name}: Ln ${c.line}, Col ${c.col}${type}</span>`;
+          })
           .join('');
       }
 
-      function setLocalCursorFromTextArea() {
-        const pos = codeEditor.selectionStart;
-        const lines = codeEditor.value.slice(0, pos).split('\n');
-        const line = lines.length;
-        const col = lines[lines.length - 1].length + 1;
-        collaborators[0].line = line;
-        collaborators[0].col = col;
+      function setLocalCursorFromMonaco() {
+        if (!monacoEditor) return;
+        const pos = monacoEditor.getPosition();
+        if (!pos) return;
+        const localUser = collaborators.find(c => !c.isAI && (c.id === currentUser?.id || c.name.includes('(you)')));
+        if (localUser) {
+          localUser.line = pos.lineNumber;
+          localUser.col = pos.column;
+        }
         renderCollaboratorCursors();
       }
 
       setInterval(() => {
-        if (!state.activeId) return;
+        if (!state.activeId || collaborators.length === 0) return;
         // simulate other collaborator/AI cursor movement
-        const target = collaborators[1 + Math.floor(Math.random() * 2)];
+        const nonLocalUsers = collaborators.filter(c => !c.name.includes('(you)'));
+        if (nonLocalUsers.length === 0) return;
+        const target = nonLocalUsers[Math.floor(Math.random() * nonLocalUsers.length)];
         const file = state.files.find(f => f.id === state.activeId);
         if (!file) return;
         const totalLines = file.code.split('\n').length;
@@ -196,6 +330,89 @@
       let authToken = localStorage.getItem('itecify-auth-token') || null;
       let currentUser = null;
       let currentWorkspaceId = localStorage.getItem('itecify-workspace-id') || null;
+      
+      // Yjs WebSocket synchronization
+      let yjsProvider = null;
+      let yjsDocument = null;
+      let yjsText = null;
+
+      function initializeYjsProvider() {
+        if (yjsProvider) {
+          yjsProvider.destroy();
+        }
+
+        if (!currentWorkspaceId || !authToken || !state.activeId) return;
+
+        try {
+          const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${wsProtocol}//${location.host}/yjs/${currentWorkspaceId}/${state.activeId}?token=${authToken}`;
+          
+          yjsDocument = new Y.Doc();
+          yjsText = yjsDocument.getText('shared-code');
+          yjsProvider = new Y.WebsocketProvider(wsUrl, `${currentWorkspaceId}/${state.activeId}`, yjsDocument);
+          
+          if (monacoEditor && yjsProvider.awareness) {
+            yjsProvider.awareness.setLocalStateField('user', {
+              name: currentUser ? currentUser.username : 'Anonymous',
+              color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+            });
+          }
+          
+          console.log(`✓ YJS WebSocket connected to: ${wsUrl}`);
+          
+          const file = getActiveFile();
+          if (file && yjsText.length === 0) {
+            yjsText.insert(0, file.code);
+          }
+          
+          let isRemoteChange = false;
+          yjsText.observe(event => {
+            isRemoteChange = true;
+            const file = getActiveFile();
+            if (!file) return;
+            file.code = yjsText.toString();
+            if (monacoEditor) {
+              const currentValue = monacoEditor.getValue();
+              if (currentValue !== file.code) {
+                monacoEditor.setValue(file.code);
+              }
+            }
+            broadcastFileUpdate(file);
+            isRemoteChange = false;
+          });
+
+          if (monacoEditor) {
+            monacoEditor.onDidChangeModelContent(() => {
+              if (isRemoteChange) return;
+              const file = getActiveFile();
+              if (!file) return;
+              const newCode = monacoEditor.getValue();
+              if (file.code !== newCode) {
+                const oldCode = file.code;
+                file.code = newCode;
+                yjsText.delete(0, yjsText.length);
+                yjsText.insert(0, newCode);
+                saveState();
+                broadcastFileUpdate(file);
+              }
+            });
+          }
+        } catch (err) {
+          console.warn('YJS provider initialization failed:', err);
+        }
+      }
+
+      function destroyYjsProvider() {
+        if (yjsProvider) {
+          yjsProvider.destroy();
+          yjsProvider = null;
+        }
+        if (yjsDocument) {
+          yjsDocument.destroy();
+          yjsDocument = null;
+        }
+        yjsText = null;
+      }
 
       function loadState() {
         try {
@@ -221,9 +438,10 @@
 
       function broadcastFileUpdate(file) {
         if (!file) return;
+        const code = monacoEditor ? monacoEditor.getValue() : file.code;
         const payload = {
           fileId: file.id,
-          code: file.code,
+          code: code,
           language: file.language,
           timestamp: Date.now()
         };
@@ -237,13 +455,12 @@
           if (!data.fileId) return;
           const file = state.files.find(f => f.id === data.fileId);
           if (!file) return;
-          // Prevent applying stale updates from the same tab (localStorage event is tab-isolated)
           if (file.code === data.code) return;
           file.code = data.code;
-          if (state.activeId === file.id) {
-            const caret = codeEditor.selectionStart;
-            codeEditor.value = data.code;
-            codeEditor.selectionStart = codeEditor.selectionEnd = caret;
+          if (state.activeId === file.id && monacoEditor) {
+            const position = monacoEditor.getPosition();
+            monacoEditor.setValue(data.code);
+            if (position) monacoEditor.setPosition(position);
           }
           if (state.activeId === file.id) {
             statusFile.textContent = file.name + ' [' + file.language + '] (updated remotely)';
@@ -413,6 +630,7 @@
               workspaceSelect.value = currentWorkspaceId;
               localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
             }
+            await loadCollaborators();
           } else {
             console.warn('workspaces load failed', data);
           }
@@ -452,22 +670,29 @@
         if (!file) return;
         flushCurrentFile();
         state.activeId = file.id;
-        codeEditor.value = file.code;
+        if (monacoEditor) {
+          const model = monacoEditor.getModel();
+          if (model) {
+            monaco.editor.setModelLanguage(model, getMonacoLanguage(file.language));
+          }
+          monacoEditor.setValue(file.code);
+        }
         statusFile.textContent = file.name + ' [' + file.language + ']';
-        // Clear stale output from the previous file
         runOutput.textContent = 'Output will appear here.';
         renderFiles();
         updateCursor();
         saveState();
+        initializeYjsProvider();
       }
 
       function flushCurrentFile() {
         const file = getActiveFile();
         if (!file) return;
-        if (file.code !== codeEditor.value) {
+        const currentCode = monacoEditor ? monacoEditor.getValue() : '';
+        if (file.code !== currentCode) {
           history[file.id].undo.push(file.code);
           history[file.id].redo = [];
-          file.code = codeEditor.value;
+          file.code = currentCode;
         }
       }
 
@@ -491,36 +716,58 @@
       }
 
       function undo() {
+        if (monacoEditor) {
+          monacoEditor.trigger('keyboard', 'undo', null);
+          return;
+        }
         const file = getActiveFile();
         if (!file || !history[file.id] || !history[file.id].undo.length) return;
         history[file.id].redo.push(file.code);
         file.code = history[file.id].undo.pop();
         isUndoRedo = true;
-        codeEditor.value = file.code;
+        if (monacoEditor) monacoEditor.setValue(file.code);
         isUndoRedo = false;
         saveState();
       }
 
       function redo() {
+        if (monacoEditor) {
+          monacoEditor.trigger('keyboard', 'redo', null);
+          return;
+        }
         const file = getActiveFile();
         if (!file || !history[file.id] || !history[file.id].redo.length) return;
         history[file.id].undo.push(file.code);
         file.code = history[file.id].redo.pop();
         isUndoRedo = true;
-        codeEditor.value = file.code;
+        if (monacoEditor) monacoEditor.setValue(file.code);
         isUndoRedo = false;
         saveState();
       }
 
       function updateCursor() {
-        const pos = codeEditor.selectionStart;
-        const lines = codeEditor.value.slice(0, pos).split('\n');
+        if (monacoEditor) {
+          const pos = monacoEditor.getPosition();
+          if (pos) {
+            cursorPos.textContent = 'Ln ' + pos.lineNumber + ', Col ' + pos.column;
+            if (collaborators.length > 0) {
+              collaborators[0].line = pos.lineNumber;
+              collaborators[0].col = pos.column;
+              renderCollaboratorCursors();
+            }
+          }
+          return;
+        }
+        const pos = codeEditorContainer.selectionStart;
+        const lines = codeEditorContainer.value.slice(0, pos).split('\n');
         const line = lines.length;
         const col = lines[lines.length - 1].length + 1;
         cursorPos.textContent = 'Ln ' + line + ', Col ' + col;
-        collaborators[0].line = line;
-        collaborators[0].col = col;
-        renderCollaboratorCursors();
+        if (collaborators.length > 0) {
+          collaborators[0].line = line;
+          collaborators[0].col = col;
+          renderCollaboratorCursors();
+        }
       }
 
 
@@ -686,8 +933,11 @@
       };
 
       workspaceSelect.onchange = () => {
+        destroyYjsProvider();
         currentWorkspaceId = workspaceSelect.value;
         localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
+        loadCollaborators();
+        initializeYjsProvider();
       };
 
       const sendAIPrompt = async (promptText, suggestionsEl) => {
@@ -783,7 +1033,8 @@
       document.getElementById('downloadFileBtn').onclick = () => {
         const file = getActiveFile();
         if (!file) return;
-        const blob = new Blob([file.code], { type:'text/plain;charset=utf-8' });
+        const code = monacoEditor ? monacoEditor.getValue() : file.code;
+        const blob = new Blob([code], { type:'text/plain;charset=utf-8' });
         const a = document.createElement('a');
         const objectUrl = URL.createObjectURL(blob);
         a.href = objectUrl;
@@ -791,7 +1042,6 @@
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        // Revoke the object URL to free memory
         setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
       };
 
@@ -799,46 +1049,6 @@
       document.getElementById('runAllBtn').onclick = runAll;
       document.getElementById('undoBtn').onclick = undo;
       document.getElementById('redoBtn').onclick = redo;
-
-      codeEditor.addEventListener('input', () => {
-        if (!state.activeId) return;
-        const file = getActiveFile();
-        if (!file) return;
-        const previousCode = file.code;
-        file.code = codeEditor.value;
-        if (!isUndoRedo) {
-          // Debounce undo history pushes to avoid one entry per keystroke
-          clearTimeout(undoDebounceTimer);
-          undoDebounceTimer = setTimeout(() => {
-            if (previousCode !== file.code) {
-              history[file.id].undo.push(previousCode);
-              history[file.id].redo = [];
-            }
-          }, 500);
-        }
-        saveState();
-        broadcastFileUpdate(file);
-      });
-
-      codeEditor.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
-          e.preventDefault();
-          flushCurrentFile();
-          saveState();
-          runOutput.textContent = 'Saved';
-        }
-        if (e.ctrlKey && e.key.toLowerCase() === 'z') {
-          e.preventDefault();
-          undo();
-        }
-        if (e.ctrlKey && e.key.toLowerCase() === 'y') {
-          e.preventDefault();
-          redo();
-        }
-      });
-
-      codeEditor.addEventListener('click', updateCursor);
-      codeEditor.addEventListener('keyup', updateCursor);
 
       fileUpload.addEventListener('change', (event) => {
         const file = event.target.files?.[0];
@@ -871,10 +1081,13 @@
       if (authToken) {
         refreshWorkspaces();
       }
-      loadState();
-      renderFiles();
-      renderAgents();
-      if (state.activeId) selectFile(state.activeId);
+
+      initMonaco().then(() => {
+        loadState();
+        renderFiles();
+        renderAgents();
+        if (state.activeId) selectFile(state.activeId);
+      });
     </script>
   </body>
 </html>
