@@ -64,10 +64,15 @@
       .file-new-hint.err { color:#ff7f7f; }
       @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.30/dist/yjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/y-websocket@3.0.0/dist/y-websocket.min.js"></script>
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script type="module">
+      import * as Y from 'https://esm.sh/yjs@13.6.30';
+      import { WebsocketProvider } from 'https://esm.sh/y-websocket@3.0.0';
+      window.Y = Y;
+      window.YJS_WEBSOCKET = WebsocketProvider;
+      window.dispatchEvent(new Event('yjs-ready'));
+    </script>
   </head>
   <body>
     <div class="container">
@@ -414,14 +419,21 @@
         }
 
         if (!currentWorkspaceId || !authToken || !state.activeId) return;
+        
+        // Wait for Yjs to load if not defined yet
+        if (typeof window.Y === 'undefined' || typeof window.YJS_WEBSOCKET === 'undefined') {
+          console.warn('Yjs not loaded yet, retrying in 500ms...');
+          setTimeout(() => initializeYjsProvider(), 500);
+          return;
+        }
 
         try {
           const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
           const wsUrl = `${wsProtocol}//${location.host}/yjs/${currentWorkspaceId}/${state.activeId}?token=${authToken}`;
           
-          yjsDocument = new Y.Doc();
+          yjsDocument = new window.Y.Doc();
           yjsText = yjsDocument.getText('shared-code');
-          yjsProvider = new Y.WebsocketProvider(wsUrl, `${currentWorkspaceId}/${state.activeId}`, yjsDocument);
+          yjsProvider = new window.YJS_WEBSOCKET(wsUrl, `${currentWorkspaceId}/${state.activeId}`, yjsDocument);
           
           if (monacoEditor && yjsProvider.awareness) {
             yjsProvider.awareness.setLocalStateField('user', {
