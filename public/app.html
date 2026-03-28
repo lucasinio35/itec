@@ -741,17 +741,48 @@
           const data = await res.json();
           
           if (res.ok && Array.isArray(data.files)) {
+            // Merge server files with local files, avoiding duplicates
+            const serverFileIds = new Set(data.files.map(f => f.id));
+            
+            // Keep local files that don't exist on server (in-progress work)
+            const localFiles = state.files.filter(f => !serverFileIds.has(f.id) && !f.id.startsWith('temp-'));
+            
             if (data.files.length > 0) {
-              state.files = data.files.map(f => ({...f}));
+              // Use server files as base, add any local-only files
+              state.files = [...data.files.map(f => ({...f}))];
+              // Add local files that weren't on server
+              localFiles.forEach(f => {
+                if (!state.files.find(sf => sf.id === f.id)) {
+                  state.files.push(f);
+                }
+              });
               state.activeId = state.files[0].id;
-            } else {
-              // No files on server, create defaults
-              state.files = DEFAULT_FILES.map(f => ({...f, id: 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2)}));
+            } else if (localFiles.length > 0) {
+              // No server files, but have local files - upload them
+              state.files = localFiles;
               state.activeId = state.files[0].id;
-              // Save defaults to server
               for (const file of state.files) {
                 await saveFileToServer(file);
               }
+            } else {
+              // No files anywhere, create defaults
+              state.files = DEFAULT_FILES.map(f => ({...f, id: 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2)}));
+              state.activeId = state.files[0].id;
+              for (const file of state.files) {
+                await saveFileToServer(file);
+              }
+            }
+            state.files.forEach(file => { 
+              if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; 
+            });
+            renderFiles();
+            if (state.activeId) selectFile(state.activeId);
+            console.log(`✓ Loaded ${state.files.length} files from server`);
+          }
+        } catch (err) {
+          console.warn('Failed to load files from server:', err);
+        }
+      }
             }
             state.files.forEach((file) => { 
               if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; 

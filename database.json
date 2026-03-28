@@ -57,6 +57,15 @@
       "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
       "createdAt": 1774707318875,
       "updatedAt": 1774707318875
+    },
+    {
+      "id": "file-1774707405821-95e7e860cd648",
+      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
+      "name": "too.js",
+      "language": "nodejs",
+      "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
+      "createdAt": 1774707405821,
+      "updatedAt": 1774707405821
     }
   ]
 }

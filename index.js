@@ -631,8 +631,9 @@ server.on('upgrade', (request, socket, head) => {
       return;
     }
     
-    // Modify URL to use room name as expected by y-websocket
-    request.url = `/${workspaceId}/${fileId}`;
+    // Store workspace and file IDs for the connection handler
+    request.wsWorkspaceId = workspaceId;
+    request.wsFileId = fileId;
     
     yjsWss.handleUpgrade(request, socket, head, (ws) => {
       yjsWss.emit('connection', ws, request);
@@ -679,8 +680,8 @@ const messageSync = 0;
 const messageAwareness = 1;
 
 yjsWss.on('connection', (ws, req) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const roomName = url.pathname.slice(1); // Remove leading /
+  // Use the workspace/file IDs stored during upgrade
+  const roomName = `${req.wsWorkspaceId}/${req.wsFileId}`;
   
   console.log(`✓ Yjs client connected: ${roomName}`);
   
