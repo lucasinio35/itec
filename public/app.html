@@ -12,8 +12,15 @@
       .container { display:grid; grid-template-rows:auto 1fr; height:100vh; overflow: hidden; }
       .top { background:#252526; border-bottom:1px solid #333; padding:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; overflow-x:auto; }
       .top h1 { margin:0; font-size:16px; color:#fff; white-space:nowrap; }
-      .top .controls { display:inline-flex; gap:8px; flex-wrap:wrap; }
+      .top .controls { display:inline-flex; gap:8px; flex-wrap:wrap; align-items:center; flex:1; }
+      .top .dropdown { position:relative; margin-left: auto; }
       .top button, .top select, .top input { background:#2a2a2f; border:1px solid #444; color:#eee; border-radius:4px; padding:5px 8px; font-size:13px; cursor:pointer; white-space:nowrap; }
+      .top .dropdown-content { display:none; position:fixed; right:20px; top:50px; background:#252526; border:1px solid #444; border-radius:4px; min-width:160px; z-index:999999; margin-top:4px; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
+      .top .dropdown-content.show { display:block; }
+      .top .dropdown-content button { display:block; width:100%; text-align:left; border:none; border-radius:0; padding:8px 12px; background:transparent; }
+      .top .dropdown-content button:hover { background:#353540; }
+      .top .dropdown-toggle { display:flex; align-items:center; gap:4px; }
+      .top .dropdown-arrow { font-size:10px; }
       .top button:hover, .top select:hover { background:#353540; }
       .main { display:grid; grid-template-columns:220px 1fr; min-height:0; overflow: hidden; }
       .sidebar { background:#20202a; border-right:1px solid #333; display:flex; flex-direction:column; min-height:0; overflow: hidden; max-width: 220px; }
@@ -69,9 +76,6 @@
         <div class="controls">
           <span id="loggedUser" style="color:#8f8; margin-right:16px; font-size:12px">Loading...</span>
           <select id="workspaceSelect" title="Workspace" style="min-width:150px"></select>
-          <button id="createWorkspaceBtn">Create Workspace</button>
-          <button id="addMemberBtn">Add Member</button>
-          <button id="logoutBtn">Logout</button>
           <button id="newFileBtn">New File</button>
           <button id="importFileBtn">Import</button>
           <input id="fileUpload" type="file" class="hidden" />
@@ -82,6 +86,14 @@
           <button id="runAllBtn">Run All</button>
           <button id="undoBtn">Undo</button>
           <button id="redoBtn">Redo</button>
+        </div>
+        <div class="dropdown">
+          <button id="menuBtn" class="dropdown-toggle">Menu <span class="dropdown-arrow">▼</span></button>
+          <div id="menuDropdown" class="dropdown-content">
+            <button id="createWorkspaceBtn">Create Workspace</button>
+            <button id="addMemberBtn">Add Member</button>
+            <button id="logoutBtn">Logout</button>
+          </div>
         </div>
       </div>
       <div class="main">
@@ -1306,7 +1318,21 @@
         window.location.href = '/login.html';
       };
 
+      const menuBtn = document.getElementById('menuBtn');
+      const menuDropdown = document.getElementById('menuDropdown');
+      menuBtn.onclick = (e) => {
+        e.stopPropagation();
+        menuDropdown.classList.toggle('show');
+      };
+      document.addEventListener('click', () => {
+        menuDropdown.classList.remove('show');
+      });
+      menuDropdown.onclick = (e) => {
+        e.stopPropagation();
+      };
+
       createWorkspaceBtn.onclick = async () => {
+        menuDropdown.classList.remove('show');
         const name = window.prompt('Workspace name:', 'My Workspace');
         if (!name) return;
         if (!authToken) { alert('Log in first'); return; }
@@ -1324,6 +1350,7 @@
       };
 
       addMemberBtn.onclick = async () => {
+        menuDropdown.classList.remove('show');
         if (!currentWorkspaceId) { alert('Select or create a workspace first'); return; }
         const identifier = window.prompt('User username or email to add to workspace:');
         if (!identifier) return;
