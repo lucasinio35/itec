@@ -1,23 +1,123 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>iTECify IDE Starter</title>
-    <style>
-      body { margin:0; background:#1e1e1e; color:#eee; font-family:Segoe UI,Arial,sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; }
-      .card { max-width: 520px; padding:24px; border:1px solid #444; background:#242424; border-radius:10px; text-align:center; }
-      a { color:#8cc2ff; text-decoration:none; }
-      a:hover { text-decoration:underline; }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <h1>iTECify IDE</h1>
-      <p>The workspace is ready. Click below to open the interactive VS Code-inspired editor.</p>
-      <p><a href="./app.html">Open IDE</a></p>
-      <p><small>If your browser does not redirect, click the link above.</small></p>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Itecify | Cloud Sandbox</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --primary-bg: #0f172a;
+      /* Login Page Navy */
+      --card-bg: #1e293b;
+      /* Slate Blue */
+      --accent: #38bdf8;
+      /* Sky Blue Accent */
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--primary-bg);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+
+    .navbar {
+      background-color: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #334155;
+    }
+
+    .hero-section {
+      padding: 160px 0;
+      background: radial-gradient(circle at 50% -20%, #1e293b, #0f172a);
+    }
+
+    .btn-login {
+      background-color: var(--accent);
+      color: #0f172a;
+      font-weight: 700;
+      padding: 14px 40px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: none;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-login:hover {
+      background-color: #7dd3fc;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
+      color: #0f172a;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 2rem;
+      height: 100%;
+      transition: border-color 0.3s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent);
+    }
+
+    .text-accent {
+      color: var(--accent);
+    }
+
+    .code-pill {
+      background: #334155;
+      color: var(--accent);
+      font-family: 'Fira Code', monospace;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin: 0 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Simple Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#">
+        <span class="text-accent">ITEC</span>IFY
+      </a>
+      <div class="ms-auto">
+        <a href="/login.html" class="btn btn-sm btn-outline-light px-4">Sign In</a>
+      </div>
     </div>
-    <script>window.location.href='/app.html';</script>
-  </body>
-</html>
+  </nav>
+
+  <!-- Centered Hero -->
+  <header class="hero-section text-center">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <h1 class="display-3 fw-bold mb-4">Code without <span class="text-accent">boundaries.</span></h1>
+          <p class="lead text-secondary mb-5 px-lg-5">
+            A high-performance sandbox environment for <span class="text-white">Node.js</span>, <span
+              class="text-white">Python</span><span class="text-white"></span>.
+            Integrated with AI for instant debugging and workspace management.
+          </p>
+
+          <!-- The Main Action -->
+          <a href="./login.html" class="btn-login">Get Started for Free</a>
+
+          <div class="mt-5 d-flex justify-content-center flex-wrap gap-2">
+            <span class="code-pill">v20.x Node</span>
+            <span class="code-pill">Py 3.11</span>
+            <span class="
