@@ -419,24 +419,25 @@
       let yjsDocument = null;
       let yjsText = null;
 
-      function initializeYjsProvider() {
+      async function initializeYjsProvider() {
         if (yjsProvider) {
           yjsProvider.destroy();
         }
 
         if (!currentWorkspaceId || !authToken || !state.activeId) return;
-        if (typeof window.Y === 'undefined') { console.warn('Y not loaded'); return; }
 
         try {
-          const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-          // Server URL with /yjs prefix, room name is separate
-          const serverUrl = `${wsProtocol}//${location.host}/yjs`;
-          const roomName = `${currentWorkspaceId}/${state.activeId}`;
-          const params = { token: authToken };
+          // Import Yjs modules dynamically
+          const Y = await import('yjs');
+          const { WebsocketProvider } = await import('y-websocket');
           
-          yjsDocument = new window.Y.Doc();
+          const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+          // Correct URL path: /yjs/{workspaceId}/{fileId}?token={token}
+          const wsUrl = `${wsProtocol}//${location.host}/yjs/${currentWorkspaceId}/${state.activeId}?token=${authToken}`;
+          
+          yjsDocument = new Y.Doc();
           yjsText = yjsDocument.getText('shared-code');
-          yjsProvider = new window.YJS_WEBSOCKET(serverUrl, roomName, yjsDocument, { params });
+          yjsProvider = new WebsocketProvider(wsUrl, currentWorkspaceId, yjsDocument);
           
           if (monacoEditor && yjsProvider.awareness) {
             yjsProvider.awareness.setLocalStateField('user', {
@@ -450,7 +451,7 @@
             });
           }
           
-          console.log(`✓ YJS WebSocket connected to: ${serverUrl}, room: ${roomName}`);
+          console.log(`✓ YJS WebSocket connected to: ${wsUrl}`);
           
           const file = getActiveFile();
           if (file && yjsText.length === 0) {
@@ -480,8 +481,8 @@
               if (!file) return;
               const newCode = monacoEditor.getValue();
               if (file.code !== newCode) {
-                const oldCode = file.code;
                 file.code = newCode;
+                // Update Yjs text directly
                 yjsText.delete(0, yjsText.length);
                 yjsText.insert(0, newCode);
                 saveState();
@@ -490,7 +491,7 @@
             });
           }
         } catch (err) {
-          console.warn('YJS provider initialization failed:', err);
+          console.error('YJS provider initialization failed:', err);
         }
       }
 
@@ -1083,7 +1084,7 @@
         localStorage.removeItem('itecify-workspace-id');
       }
 
-      function selectFile(fileId) {
+      async function selectFile(fileId) {
         const file = state.files.find(f => f.id === fileId);
         if (!file) return;
         flushCurrentFile();
@@ -1100,7 +1101,7 @@
         renderFiles();
         updateCursor();
         saveState();
-        initializeYjsProvider();
+        await initializeYjsProvider();
         if (syncRootHandle) {
           syncFileToDisk(file);
         }
@@ -1400,14 +1401,14 @@
         alert('Member added successfully.');
       };
 
-      workspaceSelect.onchange = () => {
+      workspaceSelect.onchange = async () => {
         destroyYjsProvider();
         closeSyncWebSocket();
         currentWorkspaceId = workspaceSelect.value;
         localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
         loadCollaborators();
         loadFilesFromServer();
-        initializeYjsProvider();
+        await initializeYjsProvider();
         initializeSyncWebSocket();
       };
 

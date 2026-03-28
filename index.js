@@ -879,10 +879,13 @@ function broadcastToWorkspace(workspaceId, message, excludeUserId = null) {
 
 server.listen(PORT, '0.0.0.0', () => {
   loadDatabase();
-  const localIP = Object.values(require('os').networkInterfaces())
-    .flat()
-    .filter(addr => addr.family === 'IPv4' && !addr.internal)
-    .map(addr => addr.address)[0] || 'localhost';
+  // Get the actual network IP (exclude WSL, virtual, and loopback)
+  const localIP = Object.entries(require('os').networkInterfaces())
+    .flatMap(([name, addrs]) => 
+      addrs
+        .filter(addr => addr.family === 'IPv4' && !addr.internal && !name.includes('vEthernet') && !name.includes('Virtual'))
+        .map(addr => addr.address)
+    )[0] || 'localhost';
   console.log(`✓ itecify sandbox listening on http://localhost:${PORT}`);
   console.log(`✓ WebSocket available on ws://localhost:${PORT}/yjs/{workspaceId}/{fileId}`);
   console.log(`  From another PC: http://${localIP}:${PORT}`);
