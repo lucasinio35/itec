@@ -80,7 +80,8 @@
           <button id="importFileBtn">Import</button>
           <input id="fileUpload" type="file" class="hidden" />
           <button id="saveFileBtn">Save</button>
-          <button id="downloadFileBtn">Download</button>
+          <button id="downloadFileBtn">Save As</button>
+          <button id="syncFolderBtn" style="background:#1a2a1a;border-color:#3a6a3a;color:#8fcf8f;">📁 Sync Folder</button>
           <button id="runActiveBtn">Run Active</button>
           <button id="runAllBtn">Run All</button>
           <button id="undoBtn">Undo</button>
@@ -208,16 +209,16 @@
                 }, 500);
                 saveState();
                 broadcastFileUpdate(file);
+                // Auto-sync to folder if configured
+                if (syncRootHandle) {
+                  syncFileToDisk(file);
+                }
               }
             });
 
             monacoEditor.onDidChangeCursorPosition((e) => {
               cursorPos.textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column;
-              if (collaborators.length > 0) {
-                collaborators[0].line = e.position.lineNumber;
-                collaborators[0].col = e.position.column;
-                renderCollaboratorCursors();
-              }
+              setLocalCursorFromMonaco();
             });
 
             monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -307,32 +308,82 @@
           })
           .join('');
       }
+      
+      function updateCollaboratorsFromAwareness() {
+        if (!yjsProvider || !yjsProvider.awareness) return;
+        
+        const states = yjsProvider.awareness.getStates();
+        const myClientId = yjsDocument.clientID;
+        
+        // Update cursor positions from awareness
+        collaborators = [];
+        
+        states.forEach((state, clientId) => {
+          if (state.user && clientId !== myClientId) {
+            collaborators.push({
+              id: 'awareness-' + clientId,
+              name: state.user.name || 'Anonymous',
+              color: state.user.color || '#5fa1ff',
+              line: state.cursor?.anchor || state.cursor?.head ? 1 : 1,
+              col: 1,
+              isAI: false,
+              clientId: clientId
+            });
+          }
+        });
+        
+        // Add local user
+        if (currentUser) {
+          collaborators.push({
+            id: currentUser.id,
+            name: currentUser.username + ' (you)',
+            color: COLOR_SCHEMES.local,
+            line: 1,
+            col: 1,
+            isAI: false
+          });
+        }
+        
+        // Add AI Agent
+        collaborators.push({
+          id: 'ai',
+          name: 'AI Agent',
+          color: COLOR_SCHEMES.ai,
+          line: 1,
+          col: 1,
+          isAI: true
+        });
+        
+        renderCollaboratorCursors();
+      }
 
       function setLocalCursorFromMonaco() {
         if (!monacoEditor) return;
         const pos = monacoEditor.getPosition();
         if (!pos) return;
+        
+        // Update local display
         const localUser = collaborators.find(c => !c.isAI && (c.id === currentUser?.id || c.name.includes('(you)')));
         if (localUser) {
           localUser.line = pos.lineNumber;
           localUser.col = pos.column;
         }
         renderCollaboratorCursors();
+        
+        // Broadcast cursor position via awareness
+        if (yjsProvider && yjsProvider.awareness) {
+          const currentState = yjsProvider.awareness.getLocalState() || {};
+          yjsProvider.awareness.setLocalStateField('user', {
+            ...currentState.user,
+            cursor: {
+              line: pos.lineNumber,
+              col: pos.column
+            }
+          });
+        }
       }
 
-      setInterval(() => {
-        if (!state.activeId || collaborators.length === 0) return;
-        // simulate other collaborator/AI cursor movement
-        const nonLocalUsers = collaborators.filter(c => !c.name.includes('(you)'));
-        if (nonLocalUsers.length === 0) return;
-        const target = nonLocalUsers[Math.floor(Math.random() * nonLocalUsers.length)];
-        const file = state.files.find(f => f.id === state.activeId);
-        if (!file) return;
-        const totalLines = file.code.split('\n').length;
-        target.line = Math.max(1, Math.min(totalLines, target.line + Math.floor(Math.random() * 3) - 1));
-        target.col = Math.max(1, Math.min(80, target.col + Math.floor(Math.random() * 5) - 2));
-        renderCollaboratorCursors();
-      }, 1200);
+      // Real cursor sync is handled by Yjs awareness (see initializeYjsProvider)
 
       let state = { files: [], activeId: null, agents: [{id:'agent-code', name:'Code Assistant'}] };
       let history = {};
@@ -342,6 +393,15 @@
       let authToken = localStorage.getItem('itecify-auth-token') || null;
       let currentUser = null;
       let currentWorkspaceId = localStorage.getItem('itecify-workspace-id') || null;
+      
+      // File System Access API - for sync folder
+      let syncRootHandle = null;
+      let fileHandles = {};
+      const SYNC_KEY = 'itecify-sync-folder-verified';
+      
+      // WebSocket for file sync
+      let syncWs = null;
+      let syncWsReconnectTimer = null;
       
       // Yjs WebSocket synchronization
       let yjsProvider = null;
@@ -367,6 +427,11 @@
             yjsProvider.awareness.setLocalStateField('user', {
               name: currentUser ? currentUser.username : 'Anonymous',
               color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+            });
+            
+            // Listen for awareness changes (other users' cursor positions)
+            yjsProvider.awareness.on('change', () => {
+              updateCollaboratorsFromAwareness();
             });
           }
           
@@ -425,6 +490,215 @@
         }
         yjsText = null;
       }
+      
+      // Sync WebSocket for file-level updates (create, delete, rename)
+      function initializeSyncWebSocket() {
+        if (!currentWorkspaceId || !authToken) return;
+        
+        closeSyncWebSocket();
+        
+        try {
+          const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${wsProtocol}//${location.host}/sync/${currentWorkspaceId}?token=${authToken}`;
+          
+          syncWs = new WebSocket(wsUrl);
+          
+          syncWs.onopen = () => {
+            console.log('✓ Sync WebSocket connected');
+          };
+          
+          syncWs.onmessage = (event) => {
+            try {
+              const msg = JSON.parse(event.data);
+              handleSyncMessage(msg);
+            } catch (err) {
+              // Probably a Yjs binary message, ignore
+            }
+          };
+          
+          syncWs.onclose = () => {
+            console.log('Sync WebSocket closed, reconnecting in 3s...');
+            syncWsReconnectTimer = setTimeout(() => {
+              if (currentWorkspaceId && authToken) {
+                initializeSyncWebSocket();
+              }
+            }, 3000);
+          };
+          
+          syncWs.onerror = (err) => {
+            console.warn('Sync WebSocket error:', err);
+          };
+        } catch (err) {
+          console.warn('Failed to initialize sync WebSocket:', err);
+        }
+      }
+      
+      function closeSyncWebSocket() {
+        if (syncWsReconnectTimer) {
+          clearTimeout(syncWsReconnectTimer);
+          syncWsReconnectTimer = null;
+        }
+        if (syncWs) {
+          syncWs.close();
+          syncWs = null;
+        }
+      }
+      
+      function handleSyncMessage(msg) {
+        if (msg.type === 'file-created') {
+          // A new file was created by another user
+          if (!state.files.find(f => f.id === msg.file.id)) {
+            state.files.push(msg.file);
+            history[msg.file.id] = {undo:[], redo:[]};
+            renderFiles();
+            runOutput.textContent = `✓ New file created: ${msg.file.name}`;
+          }
+        } else if (msg.type === 'file-updated') {
+          // A file was updated by another user
+          const file = state.files.find(f => f.id === msg.file.id);
+          if (file) {
+            // Only update if not currently editing this file
+            if (state.activeId !== file.id || !document.activeElement?.closest('#codeEditor')) {
+              file.name = msg.file.name;
+              file.language = msg.file.language;
+              file.code = msg.file.code;
+              file.updatedAt = msg.file.updatedAt;
+              if (state.activeId === file.id && monacoEditor) {
+                const currentCode = monacoEditor.getValue();
+                if (currentCode !== file.code) {
+                  monacoEditor.setValue(file.code);
+                }
+              }
+              renderFiles();
+            }
+          }
+        } else if (msg.type === 'file-deleted') {
+          // A file was deleted by another user
+          const idx = state.files.findIndex(f => f.id === msg.fileId);
+          if (idx !== -1) {
+            const deletedFile = state.files[idx];
+            state.files.splice(idx, 1);
+            delete history[msg.fileId];
+            if (state.activeId === msg.fileId) {
+              state.activeId = state.files[0]?.id || null;
+            }
+            renderFiles();
+            if (state.activeId) selectFile(state.activeId);
+            runOutput.textContent = `File deleted: ${deletedFile.name}`;
+          }
+        }
+      }
+      
+      function sendSyncMessage(msg) {
+        if (syncWs && syncWs.readyState === WebSocket.OPEN) {
+          syncWs.send(JSON.stringify(msg));
+        }
+      }
+
+      // File System Access API - Sync Folder
+      async function selectSyncFolder() {
+        if (!('showDirectoryPicker' in window)) {
+          alert('File System Access API not supported. Use Chrome/Edge.');
+          return;
+        }
+        try {
+          syncRootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+          localStorage.setItem(SYNC_KEY, 'true');
+          await syncAllFiles();
+          runOutput.textContent = '✓ Sync folder selected: ' + syncRootHandle.name;
+          updateSyncButton();
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.warn('Sync folder error:', err);
+          }
+        }
+      }
+
+      async function syncAllFiles() {
+        if (!syncRootHandle) return;
+        for (const file of state.files) {
+          await syncFileToDisk(file);
+        }
+      }
+
+      async function syncFileToDisk(file) {
+        if (!syncRootHandle) return;
+        try {
+          let folderHandle = syncRootHandle;
+          const parts = file.name.split('/');
+          if (parts.length > 1) {
+            for (let i = 0; i < parts.length - 1; i++) {
+              folderHandle = await folderHandle.getDirectoryHandle(parts[i], { create: true });
+            }
+          }
+          const fileHandle = await folderHandle.getFileHandle(parts[parts.length - 1], { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(file.code);
+          await writable.close();
+          fileHandles[file.id] = fileHandle;
+        } catch (err) {
+          console.warn('Sync file error:', file.name, err);
+        }
+      }
+
+      async function saveAsWithDialog() {
+        const file = getActiveFile();
+        if (!file) return;
+        
+        if ('showSaveFilePicker' in window) {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: file.name,
+              types: [{
+                description: 'All Files',
+                accept: { '*/*': [] }
+              }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(monacoEditor ? monacoEditor.getValue() : file.code);
+            await writable.close();
+            runOutput.textContent = '✓ Saved: ' + handle.name;
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              console.warn('Save as error:', err);
+              runOutput.textContent = 'Save cancelled or error';
+            }
+          }
+        } else {
+          // Fallback for browsers without File System Access API
+          downloadFileFallback(file);
+        }
+      }
+
+      function downloadFileFallback(file) {
+        const code = monacoEditor ? monacoEditor.getValue() : file.code;
+        const blob = new Blob([code], { type:'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        const objectUrl = URL.createObjectURL(blob);
+        a.href = objectUrl;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
+      }
+
+      function updateSyncButton() {
+        const btn = document.getElementById('syncFolderBtn');
+        if (btn) {
+          if (syncRootHandle) {
+            btn.textContent = '📁 Synced: ' + syncRootHandle.name;
+            btn.style.background = '#1a3a1a';
+            btn.style.borderColor = '#4a8a4a';
+            btn.style.color = '#8f8';
+          } else {
+            btn.textContent = '📁 Sync Folder';
+            btn.style.background = '#1a2a1a';
+            btn.style.borderColor = '#3a6a3a';
+            btn.style.color = '#8fcf8f';
+          }
+        }
+      }
 
       function loadState() {
         try {
@@ -442,6 +716,102 @@
         }
         if (!state.activeId && state.files.length) state.activeId = state.files[0].id;
         state.files.forEach((file) => { if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; });
+      }
+      
+      // Load files from server
+      async function loadFilesFromServer() {
+        if (!currentWorkspaceId || !authToken) return;
+        
+        try {
+          const res = await fetch(`/api/workspaces/${currentWorkspaceId}/files`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          const data = await res.json();
+          
+          if (res.ok && Array.isArray(data.files)) {
+            if (data.files.length > 0) {
+              state.files = data.files.map(f => ({...f}));
+              state.activeId = state.files[0].id;
+            } else {
+              // No files on server, create defaults
+              state.files = DEFAULT_FILES.map(f => ({...f, id: 'file-' + Date.now() + '-' + Math.random().toString(16).slice(2)}));
+              state.activeId = state.files[0].id;
+              // Save defaults to server
+              for (const file of state.files) {
+                await saveFileToServer(file);
+              }
+            }
+            state.files.forEach((file) => { 
+              if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; 
+            });
+            renderFiles();
+            if (state.activeId) selectFile(state.activeId);
+            console.log(`✓ Loaded ${state.files.length} files from server`);
+          }
+        } catch (err) {
+          console.warn('Failed to load files from server:', err);
+        }
+      }
+      
+      // Save a single file to server
+      async function saveFileToServer(file) {
+        if (!authToken) return null;
+        try {
+          const res = await fetch(`/api/files/${file.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+              name: file.name,
+              language: file.language,
+              code: file.code
+            })
+          });
+          if (!res.ok) {
+            console.warn('Failed to save file to server:', file.name);
+          }
+          return res.ok;
+        } catch (err) {
+          console.warn('Error saving file to server:', err);
+          return false;
+        }
+      }
+      
+      // Create file on server
+      async function createFileOnServer(name, language, code) {
+        if (!authToken || !currentWorkspaceId) return null;
+        try {
+          const res = await fetch(`/api/workspaces/${currentWorkspaceId}/files`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ name, language, code })
+          });
+          const data = await res.json();
+          if (res.ok && data.file) {
+            return data.file;
+          }
+        } catch (err) {
+          console.warn('Error creating file on server:', err);
+        }
+        return null;
+      }
+      
+      // Delete file from server
+      async function deleteFileFromServer(fileId) {
+        if (!authToken) return;
+        try {
+          await fetch(`/api/files/${fileId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+        } catch (err) {
+          console.warn('Error deleting file from server:', err);
+        }
       }
 
       function saveState() {
@@ -643,6 +1013,8 @@
               localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
             }
             await loadCollaborators();
+            await loadFilesFromServer();
+            initializeSyncWebSocket();
           } else {
             console.warn('workspaces load failed', data);
           }
@@ -695,6 +1067,9 @@
         updateCursor();
         saveState();
         initializeYjsProvider();
+        if (syncRootHandle) {
+          syncFileToDisk(file);
+        }
       }
 
       function flushCurrentFile() {
@@ -705,6 +1080,10 @@
           history[file.id].undo.push(file.code);
           history[file.id].redo = [];
           file.code = currentCode;
+          // Save to server
+          if (authToken && currentWorkspaceId) {
+            saveFileToServer(file);
+          }
         }
       }
 
@@ -715,6 +1094,30 @@
         if (!history[id]) history[id] = {undo: [], redo: []};
         selectFile(id);
         saveState();
+        
+        // Save to server
+        if (authToken && currentWorkspaceId) {
+          createFileOnServer(name, language, initialCode).then(serverFile => {
+            if (serverFile) {
+              // Update local file with server-assigned ID
+              const idx = state.files.findIndex(f => f.id === id);
+              if (idx !== -1 && serverFile.id !== id) {
+                // Server gave us a new ID, update local references
+                history[serverFile.id] = history[id];
+                delete history[id];
+                state.files[idx] = { ...serverFile };
+                if (state.activeId === id) {
+                  state.activeId = serverFile.id;
+                }
+                renderFiles();
+              }
+            }
+          });
+        }
+        
+        if (syncRootHandle) {
+          syncFileToDisk(file);
+        }
       }
 
       function deleteFile(id) {
@@ -725,6 +1128,11 @@
         saveState();
         renderFiles();
         selectFile(state.activeId);
+        
+        // Delete from server
+        if (authToken) {
+          deleteFileFromServer(id);
+        }
       }
 
       function undo() {
@@ -961,10 +1369,13 @@
 
       workspaceSelect.onchange = () => {
         destroyYjsProvider();
+        closeSyncWebSocket();
         currentWorkspaceId = workspaceSelect.value;
         localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
         loadCollaborators();
+        loadFilesFromServer();
         initializeYjsProvider();
+        initializeSyncWebSocket();
       };
 
       const sendAIPrompt = async (promptText, suggestionsEl) => {
@@ -1054,23 +1465,18 @@
       document.getElementById('saveFileBtn').onclick = () => {
         flushCurrentFile();
         saveState();
-        runOutput.textContent = 'Saved';
+        const file = getActiveFile();
+        if (file && syncRootHandle) {
+          syncFileToDisk(file);
+          runOutput.textContent = '✓ Saved & synced: ' + file.name;
+        } else {
+          runOutput.textContent = '✓ Saved (use "Sync Folder" for auto-sync)';
+        }
       };
 
-      document.getElementById('downloadFileBtn').onclick = () => {
-        const file = getActiveFile();
-        if (!file) return;
-        const code = monacoEditor ? monacoEditor.getValue() : file.code;
-        const blob = new Blob([code], { type:'text/plain;charset=utf-8' });
-        const a = document.createElement('a');
-        const objectUrl = URL.createObjectURL(blob);
-        a.href = objectUrl;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
-      };
+      document.getElementById('downloadFileBtn').onclick = saveAsWithDialog;
+
+      document.getElementById('syncFolderBtn').onclick = selectSyncFolder;
 
       document.getElementById('runActiveBtn').onclick = runActive;
       document.getElementById('runAllBtn').onclick = runAll;
@@ -1105,15 +1511,16 @@
       }
 
       updateAuthUI();
-      if (authToken) {
-        refreshWorkspaces();
-      }
-
+      
       initMonaco().then(() => {
         loadState();
         renderFiles();
         renderAgents();
-        if (state.activeId) selectFile(state.activeId);
+        if (authToken) {
+          refreshWorkspaces();
+        } else if (state.activeId) {
+          selectFile(state.activeId);
+        }
       });
     </script>
   </body>
