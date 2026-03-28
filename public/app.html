@@ -23,6 +23,13 @@
       .file-item button, .agent-item button { background:#3a3a40; border:1px solid #555; color:#ccc; border-radius:3px; padding:2px 6px; font-size:11px; cursor:pointer; }
       .file-item button:hover, .agent-item button:hover { background:#454550; }
       .file-item.active, .agent-item.active { border-color:#5f9cff; background:#32354e; }
+      .agent-panel { background:#252536; border:1px solid #444; border-radius:6px; margin:8px 6px 0px 6px; padding:8px; }
+      .agent-panel.hidden { display:none; }
+      .agent-panel h3 { margin:0 0 8px 0; font-size:12px; color:#fff; }
+      .agent-panel textarea { width:100%; height:70px; margin-bottom:6px; background:#1f2132; border:1px solid #444; color:#eee; padding:6px; font-family:Consolas, Monaco, monospace; font-size:12px; }
+      .agent-panel .agent-suggestions { background:#1b1c28; border:1px solid #444; border-radius:4px; padding:6px; color:#c8d0e0; font-size:12px; height:110px; overflow:auto; white-space:pre-wrap; }
+      .agent-panel .agent-buttons { display:flex; gap:6px; margin-top:8px; }
+      .agent-panel .agent-buttons button { flex:1; background:#2a2a3a; border:1px solid #444; color:#eee; border-radius:4px; padding:6px; font-size:12px; cursor:pointer; }
       .editor-wrap { display:flex; flex-direction:column; min-height:0; }
       .tabbar { background:#1f1f24; display:flex; border-bottom:1px solid #333; }
       .tab { cursor:pointer; color:#ccc; padding:8px 10px; font-size:13px; border-right:1px solid #2f2f3b; }
@@ -76,6 +83,15 @@
           <div class="file-list" id="fileList"></div>
           <div class="panel-title">AI Agents</div>
           <div class="agent-list" id="agentList"></div>
+          <div id="agentPanel" class="agent-panel hidden">
+            <h3 id="agentPanelTitle">AI Agent</h3>
+            <textarea id="agentPanelPrompt" placeholder="Ask the AI about this code"></textarea>
+            <div id="agentPanelSuggestions" class="agent-suggestions">Type a prompt and click Get Suggestions.</div>
+            <div class="agent-buttons">
+              <button id="agentPanelSubmitBtn">Get Suggestions</button>
+              <button id="agentPanelHideBtn">Hide</button>
+            </div>
+          </div>
         </aside>
         <section class="editor-wrap">
           <div class="tabbar" id="tabBar"></div>
@@ -83,24 +99,6 @@
           <div class="status"><span id="statusFile">No file selected</span><span id="cursorPos">Ln 1, Col 1</span></div>
           <div class="output" id="runOutput">Output will appear here.</div>
         </section>
-      </div>
-    </div>
-
-    <div id="aiModal" class="modal-overlay hidden">
-      <div class="modal">
-        <h2>AI Code Assistant</h2>
-        <div class="modal-prompt">
-          <label>Your Prompt:</label>
-          <textarea id="aiPrompt" placeholder="Ask me to improve the code, add features, fix bugs, etc."></textarea>
-        </div>
-        <div class="modal-prompt">
-          <label>Suggestions:</label>
-          <div class="modal-suggestions" id="aiSuggestions">Suggestions will appear here...</div>
-        </div>
-        <div class="modal-buttons">
-          <button id="aiSubmitBtn">Get Suggestions</button>
-          <button id="aiCloseBtn">Close</button>
-        </div>
       </div>
     </div>
 
@@ -117,7 +115,7 @@
         c:'#include <stdio.h>\n// Hello from C\nint main() { printf("Hello, World!\\n"); return 0; }\n',
         cpp:'#include <iostream>\n// Hello from C++\nint main() { std::cout << "Hello, World!\\n"; return 0; }\n',
         csharp:'using System;\n// Hello from C#\nclass Program { static void Main() { Console.WriteLine("Hello, World!"); } }\n',
-        html:'<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>Hello</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n</body>\n</html>\n',
+        html:'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Hello<' + '/title>' + '</head><body><h1>Hello, World!</h1><' + '/body></html>',
         css:'/* Hello from CSS */\nbody { background: #1e1e1e; color: #ddd; font-family: Arial, sans-serif; }\n'
       };
 
@@ -130,10 +128,17 @@
       const runOutput = document.getElementById('runOutput');
       const langSelect = document.getElementById('langSelect');
       const agentListEl = document.getElementById('agentList');
+      const agentPanel = document.getElementById('agentPanel');
+      const agentPanelTitle = document.getElementById('agentPanelTitle');
+      const agentPanelPrompt = document.getElementById('agentPanelPrompt');
+      const agentPanelSuggestions = document.getElementById('agentPanelSuggestions');
+      const agentPanelSubmitBtn = document.getElementById('agentPanelSubmitBtn');
+      const agentPanelHideBtn = document.getElementById('agentPanelHideBtn');
 
-      let state = { files: [], activeId: null, agents: [] };
+      let state = { files: [], activeId: null, agents: [{id:'agent-code', name:'Code Assistant'}] };
       let history = {};
       let isUndoRedo = false;
+      let currentAgentId = null;
 
       function loadState() {
         try {
@@ -145,6 +150,9 @@
         if (!Array.isArray(state.files) || !state.files.length) {
           state.files = DEFAULT_FILES.map(f => ({...f}));
           state.activeId = state.files[0].id;
+        }
+        if (!Array.isArray(state.agents) || !state.agents.length) {
+          state.agents = [{id:'agent-code', name:'Code Assistant'}];
         }
         if (!state.activeId && state.files.length) state.activeId = state.files[0].id;
         state.files.forEach((file) => { if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; });
@@ -202,12 +210,29 @@
           const label = document.createElement('span');
           label.textContent = agent.name;
           row.appendChild(label);
+
           const openBtn = document.createElement('button');
           openBtn.textContent = 'Open';
-          openBtn.onclick = (e) => { e.stopPropagation(); alert('AI Agent: ' + agent.name + ' (stub)'); };
+          openBtn.onclick = (e) => {
+            e.stopPropagation();
+            showAgentPanel(agent);
+          };
           row.appendChild(openBtn);
           agentListEl.appendChild(row);
         });
+      }
+
+      function showAgentPanel(agent) {
+        if (!agent) return;
+        currentAgentId = agent.id;
+        agentPanelTitle.textContent = 'AI Agent: ' + agent.name;
+        agentPanelPrompt.value = '';
+        agentPanelSuggestions.textContent = 'Type a prompt and click Get Suggestions.';
+        agentPanel.classList.remove('hidden');
+      }
+
+      function hideAgentPanel() {
+        agentPanel.classList.add('hidden');
       }
 
       function getActiveFile() { return state.files.find(f => f.id === state.activeId); }
@@ -291,12 +316,56 @@
         statusFile.textContent = file.name + ' [' + file.language + ']';
       }
 
-      async function runActive() {
-        const file = getActiveFile();
-        if (!file) return;
-        flushCurrentFile();
-        runOutput.textContent = 'Running ' + file.name + '...';
+      async function runFile(file) {
+        if (!file) {
+          runOutput.textContent = 'No file selected.';
+          return;
+        }
 
+        if (file.language === 'html') {
+          runOutput.innerHTML = '';
+          const iframe = document.createElement('iframe');
+          iframe.style.width = '100%';
+          iframe.style.height = '300px';
+          iframe.style.border = '1px solid #444';
+          iframe.srcdoc = file.code;
+          runOutput.appendChild(iframe);
+          return;
+        }
+
+        if (file.language === 'css') {
+          let styleEl = document.getElementById('itecify-runtime-style');
+          if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'itecify-runtime-style';
+            document.head.appendChild(styleEl);
+          }
+          styleEl.textContent = file.code;
+          runOutput.textContent = 'CSS applied to the UI.';
+          return;
+        }
+
+        if (file.language === 'nodejs') {
+          runOutput.textContent = 'Running JavaScript...';
+          let capture = '';
+          const originalLog = console.log;
+          const originalError = console.error;
+          console.log = (...args) => { capture += args.map(x => String(x)).join(' ') + '\n'; };
+          console.error = (...args) => { capture += args.map(x => String(x)).join(' ') + '\n'; };
+
+          try {
+            new Function(file.code)();
+            runOutput.textContent = capture || 'JavaScript executed successfully (no output).';
+          } catch (err) {
+            runOutput.textContent = 'JavaScript error: ' + err;
+          } finally {
+            console.log = originalLog;
+            console.error = originalError;
+          }
+          return;
+        }
+
+        runOutput.textContent = 'Running ' + file.name + '...';
         try {
           const res = await fetch('/api/sandbox/run', {
             method:'POST', headers:{'Content-Type':'application/json'},
@@ -316,63 +385,65 @@
         }
       }
 
+      async function runActive() {
+        const file = getActiveFile();
+        if (!file) {
+          runOutput.textContent = 'No file selected.';
+          return;
+        }
+        flushCurrentFile();
+        await runFile(file);
+      }
+
       async function runAll() {
         flushCurrentFile();
-        runOutput.textContent = 'Running all files in chain...';
+        let fullOutput = 'Running all files...\n';
+        runOutput.textContent = fullOutput;
 
-        const steps = state.files.map(f => ({ language:f.language, code:f.code, fileName:f.name }));
+        for (const file of state.files) {
+          fullOutput += '\n=== ' + file.name + ' (' + file.language + ') ===\n';
+          runOutput.textContent = fullOutput;
 
-        const popup = window.open('', '_blank', 'width=840,height=620,resizable=yes,scrollbars=yes');
-        if (!popup) { alert('Allow popups.'); return; }
-
-        popup.document.write('<!doctype html><html><head><title>Run output</title><style>body{background:#111;color:#e6e6e6;font-family:monospace; padding:8px;}#out{white-space:pre-wrap;}</style></head><body><h3>Run Log</h3><div id="out">Starting...</div></body></html>');
-        popup.document.close();
-
-        try {
-          const response = await fetch('/api/sandbox/run/chain', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ steps }) });
-          if (!response.ok) {
-            const text = await response.text();
-            popup.document.getElementById('out').textContent = 'Error: ' + text;
-            return;
-          }
-
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder('utf-8');
-          let buffer = '';
-
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream:true });
-            let cut;
-            while ((cut = buffer.indexOf('\n\n')) !== -1) {
-              const chunk = buffer.slice(0, cut).trim();
-              buffer = buffer.slice(cut + 2);
-              if (!chunk) continue;
-              const lines = chunk.split('\n');
-              let event = 'message';
-              let data = '';
-              for (const line of lines) {
-                if (line.startsWith('event:')) event = line.slice(6).trim();
-                if (line.startsWith('data:')) data = line.slice(5).trim();
-              }
-              if (!data) continue;
-              try {
-                const parsed = JSON.parse(data);
-                const out = popup.document.getElementById('out');
-                if (event === 'chunk') out.textContent += parsed.text || '';
-                else if (event === 'step-start') out.textContent += '\n\n=== ' + (parsed.label || parsed.language) + ' started\n';
-                else if (event === 'step-done') out.textContent += '\n--- ' + (parsed.label || parsed.language) + ' exit ' + parsed.exitCode + ' \n';
-                else if (event === 'done') out.textContent += '\n=== chain completed\n';
-              } catch (err) { console.warn('parse event', err); }
-            }
-          }
-          runOutput.textContent = 'Run chain complete (see popup window).';
-        } catch (err) {
-          runOutput.textContent = 'Run error: ' + err.message;
-          if (popup && !popup.closed) popup.document.getElementById('out').textContent = 'Error: ' + err.message;
+          await runFile(file);
+          fullOutput += runOutput.textContent + '\n';
+          runOutput.textContent = fullOutput;
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
+
+        fullOutput += '\nAll files processed.';
+        runOutput.textContent = fullOutput;
       }
+
+      const sendAIPrompt = async (promptText, suggestionsEl) => {
+        const prompt = promptText.trim();
+        if (!prompt) {
+          suggestionsEl.textContent = 'Please enter a prompt first.';
+          return;
+        }
+        suggestionsEl.textContent = 'Thinking...';
+        runOutput.textContent = 'AI is processing your prompt...';
+        try {
+          const res = await fetch('/api/ai', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ prompt })
+          });
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(res.status + ' ' + txt);
+          }
+          const data = await res.json();
+          const text = data.response || '[No response]';
+          suggestionsEl.textContent = text;
+          runOutput.textContent = 'AI response received.';
+        } catch (err) {
+          suggestionsEl.textContent = 'AI error: ' + (err.message || err);
+          runOutput.textContent = 'AI error: ' + (err.message || err);
+        }
+      };
+
+      agentPanelSubmitBtn.onclick = () => sendAIPrompt(agentPanelPrompt.value, agentPanelSuggestions);
+      agentPanelHideBtn.onclick = hideAgentPanel;
 
       function confirmNewFile(name) {
         if (!name || !name.trim()) {
@@ -396,12 +467,17 @@
 
       // Button handlers
       document.getElementById('newFileBtn').onclick = () => {
-        // Create temp file for inline naming
-        state.files.push({ id: 'temp-new', name: '', language: 'html', code: '' });
-        renderFiles();
-        // Focus the input
-        const input = fileListEl.querySelector('input');
-        if (input) input.focus();
+        const name = window.prompt('Enter new filename (.html, .css, .js):', 'new-file.html');
+        if (!name) return;
+        const trimmed = name.trim();
+        const ext = trimmed.split('.').pop().toLowerCase();
+        if (!['html', 'css', 'js'].includes(ext)) {
+          alert('File name must end with .html, .css, or .js');
+          return;
+        }
+        const lang = ext === 'js' ? 'nodejs' : ext;
+        const template = TEMPLATES[lang] || '';
+        createFile(trimmed, lang, template);
       };
 
       document.getElementById('importFileBtn').onclick = () => fileUpload.click();
