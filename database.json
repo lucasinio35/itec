@@ -66,6 +66,24 @@
       "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
       "createdAt": 1774705622863,
       "updatedAt": 1774705622863
+    },
+    {
+      "id": "file-1774706022332-f00442ba46003",
+      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
+      "name": "car.js",
+      "language": "nodejs",
+      "code": "// Hello from JavaScript\nconsole.log(\"Hello, World!\");\n",
+      "createdAt": 1774706022332,
+      "updatedAt": 1774706022332
+    },
+    {
+      "id": "file-1774706146145-ed98b82b271c6",
+      "workspaceId": "ws-1774697380201-b1f63bc4b7d618",
+      "name": "monaco.html",
+      "language": "html",
+      "code": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Hello</title></head><body><h1>Hello, World!</h1></body></html>",
+      "createdAt": 1774706146145,
+      "updatedAt": 1774706146145
     }
   ]
 }

@@ -768,7 +768,7 @@
       }
       
       // Create file on server
-      async function createFileOnServer(name, language, code) {
+      async function createFileOnServer(id, name, language, code) {
         if (!authToken || !currentWorkspaceId) return null;
         try {
           const res = await fetch(`/api/workspaces/${currentWorkspaceId}/files`, {
@@ -777,7 +777,7 @@
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify({ name, language, code })
+            body: JSON.stringify({ id, name, language, code, creatorId: currentUser?.id })
           });
           const data = await res.json();
           if (res.ok && data.file) {
@@ -1083,14 +1083,13 @@
         selectFile(id);
         saveState();
         
-        // Save to server
+        // Save to server with local ID
         if (authToken && currentWorkspaceId) {
-          createFileOnServer(name, language, initialCode).then(serverFile => {
-            if (serverFile) {
-              // Update local file with server-assigned ID
+          createFileOnServer(id, name, language, initialCode).then(serverFile => {
+            if (serverFile && serverFile.id !== id) {
+              // Server returned a different ID - update local references
               const idx = state.files.findIndex(f => f.id === id);
-              if (idx !== -1 && serverFile.id !== id) {
-                // Server gave us a new ID, update local references
+              if (idx !== -1) {
                 history[serverFile.id] = history[id];
                 delete history[id];
                 state.files[idx] = { ...serverFile };

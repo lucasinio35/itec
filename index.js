@@ -737,7 +737,7 @@ yjsWss.on('connection', (ws, req) => {
         encoding.writeVarUint(encoder, messageSync);
         const syncMessageType = syncProtocol.readSyncMessage(decoder, encoder, room.doc, ws);
         
-        // If sync step 2 or update, broadcast to all other clients
+        // If sync step 2 or update, broadcast to all OTHER clients only
         if (syncMessageType === syncProtocol.messageYjsSyncStep2 ||
             syncMessageType === syncProtocol.messageYjsUpdate) {
           const update = encoding.toUint8Array(encoder);
@@ -748,8 +748,9 @@ yjsWss.on('connection', (ws, req) => {
           });
         }
         
-        // Always send response to sender
-        if (encoding.length(encoder) > 1) {
+        // Only send sync step 1 response back to sender (not for updates)
+        // Updates don't need to be echoed back - sender already has them
+        if (syncMessageType === syncProtocol.messageYjsSyncStep1 && encoding.length(encoder) > 1) {
           ws.send(encoding.toUint8Array(encoder));
         }
       }
@@ -757,7 +758,7 @@ yjsWss.on('connection', (ws, req) => {
         const update = decoding.readVarUint8Array(decoder);
         awarenessProtocol.applyAwarenessUpdate(room.awareness, update, ws);
         
-        // Broadcast to all other clients
+        // Broadcast to all OTHER clients only
         room.clients.forEach(client => {
           if (client !== ws && client.readyState === 1) {
             const encoder = encoding.createEncoder();
@@ -772,23 +773,26 @@ yjsWss.on('connection', (ws, req) => {
     }
   });
   
-  // Listen for document updates
+  // Listen for document updates (from other clients)
   const updateHandler = (update, origin) => {
     if (origin !== ws) {
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, messageSync);
       syncProtocol.writeUpdate(encoder, update);
+      const msg = encoding.toUint8Array(encoder);
       room.clients.forEach(client => {
-        if (client.readyState === 1) {
-          client.send(encoding.toUint8Array(encoder));
+        if (client !== origin && client.readyState === 1) {
+          client.send(msg);
         }
       });
     }
   };
   room.doc.on('update', updateHandler);
   
-  // Listen for awareness updates
+  // Listen for awareness updates (from other clients)
   const awarenessChangeHandler = ({ added, updated, removed }, origin) => {
+    if (origin === ws) return; // Don't send back to origin
+    
     const changedClients = added.concat(updated, removed);
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, messageAwareness);
@@ -798,7 +802,7 @@ yjsWss.on('connection', (ws, req) => {
     ));
     const message = encoding.toUint8Array(encoder);
     room.clients.forEach(client => {
-      if (client.readyState === 1) {
+      if (client !== origin && client.readyState === 1) {
         client.send(message);
       }
     });
