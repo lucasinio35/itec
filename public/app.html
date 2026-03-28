@@ -66,8 +66,14 @@
     </style>
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.8/dist/yjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/y-websocket@1.5.4/dist/y-websocket.min.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "yjs": "https://cdn.jsdelivr.net/npm/yjs@13.6.8/+esm",
+        "y-websocket": "https://cdn.jsdelivr.net/npm/y-websocket@1.5.4/+esm"
+      }
+    }
+    </script>
   </head>
   <body>
     <div class="container">
@@ -126,7 +132,12 @@
       </div>
     </div>
 
-    <script>
+    <script type="module">
+      import * as Y from 'yjs';
+      import { WebsocketProvider } from 'y-websocket';
+      window.Y = Y;
+      window.YJS_WEBSOCKET = WebsocketProvider;
+      
       const STORAGE_KEY = 'itecify-ide-state-v2';
       const DEFAULT_FILES = [
         { id:'file-js', name:'main.js', language:'nodejs', code:'// Hello from JavaScript\nconsole.log("Hello, World!");\n' },
@@ -414,18 +425,18 @@
         }
 
         if (!currentWorkspaceId || !authToken || !state.activeId) return;
-        if (typeof Y === 'undefined') { console.warn('Y not loaded'); return; }
+        if (typeof window.Y === 'undefined') { console.warn('Y not loaded'); return; }
 
         try {
           const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-          // Server URL without room, room name is separate parameter
-          const serverUrl = `${wsProtocol}//${location.host}`;
+          // Server URL with /yjs prefix, room name is separate
+          const serverUrl = `${wsProtocol}//${location.host}/yjs`;
           const roomName = `${currentWorkspaceId}/${state.activeId}`;
           const params = { token: authToken };
           
-          yjsDocument = new Y.Doc();
+          yjsDocument = new window.Y.Doc();
           yjsText = yjsDocument.getText('shared-code');
-          yjsProvider = new Y.WebsocketProvider(serverUrl, roomName, yjsDocument, { params });
+          yjsProvider = new window.YJS_WEBSOCKET(serverUrl, roomName, yjsDocument, { params });
           
           if (monacoEditor && yjsProvider.awareness) {
             yjsProvider.awareness.setLocalStateField('user', {
@@ -439,7 +450,7 @@
             });
           }
           
-          console.log(`✓ YJS WebSocket connected to: ${wsUrl}`);
+          console.log(`✓ YJS WebSocket connected to: ${serverUrl}, room: ${roomName}`);
           
           const file = getActiveFile();
           if (file && yjsText.length === 0) {
