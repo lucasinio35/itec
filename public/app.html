@@ -66,13 +66,8 @@
     </style>
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-    <script type="module">
-      import * as Y from 'https://esm.sh/yjs@13.6.30';
-      import { WebsocketProvider } from 'https://esm.sh/y-websocket@3.0.0';
-      window.Y = Y;
-      window.YJS_WEBSOCKET = WebsocketProvider;
-      window.dispatchEvent(new Event('yjs-ready'));
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.8/dist/yjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/y-websocket@1.5.4/dist/y-websocket.min.js"></script>
   </head>
   <body>
     <div class="container">
@@ -419,21 +414,18 @@
         }
 
         if (!currentWorkspaceId || !authToken || !state.activeId) return;
-        
-        // Wait for Yjs to load if not defined yet
-        if (typeof window.Y === 'undefined' || typeof window.YJS_WEBSOCKET === 'undefined') {
-          console.warn('Yjs not loaded yet, retrying in 500ms...');
-          setTimeout(() => initializeYjsProvider(), 500);
-          return;
-        }
+        if (typeof Y === 'undefined') { console.warn('Y not loaded'); return; }
 
         try {
           const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const wsUrl = `${wsProtocol}//${location.host}/yjs/${currentWorkspaceId}/${state.activeId}?token=${authToken}`;
+          // Server URL without room, room name is separate parameter
+          const serverUrl = `${wsProtocol}//${location.host}`;
+          const roomName = `${currentWorkspaceId}/${state.activeId}`;
+          const params = { token: authToken };
           
-          yjsDocument = new window.Y.Doc();
+          yjsDocument = new Y.Doc();
           yjsText = yjsDocument.getText('shared-code');
-          yjsProvider = new window.YJS_WEBSOCKET(wsUrl, `${currentWorkspaceId}/${state.activeId}`, yjsDocument);
+          yjsProvider = new Y.WebsocketProvider(serverUrl, roomName, yjsDocument, { params });
           
           if (monacoEditor && yjsProvider.awareness) {
             yjsProvider.awareness.setLocalStateField('user', {
@@ -773,18 +765,6 @@
               }
             }
             state.files.forEach(file => { 
-              if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; 
-            });
-            renderFiles();
-            if (state.activeId) selectFile(state.activeId);
-            console.log(`✓ Loaded ${state.files.length} files from server`);
-          }
-        } catch (err) {
-          console.warn('Failed to load files from server:', err);
-        }
-      }
-            }
-            state.files.forEach((file) => { 
               if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; 
             });
             renderFiles();
