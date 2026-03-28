@@ -3,9 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { spawn } = require('child_process');
+const https = require('https');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3002;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static('public'));
@@ -16,8 +18,57 @@ app.get('/health', (_req, res) => {
 
 app.post('/api/ai', async (req, res) => {
   const prompt = req.body?.prompt || '';
-  const answer = `AI placeholder response for prompt:\n${prompt}\n\n[This is a local stub, integrate with your AI provider]`;
-  res.json({ response: answer });
+  
+  if (!OPENAI_API_KEY) {
+    return res.json({ response: 'Error: OPENAI_API_KEY not set. Set environment variable OPENAI_API_KEY to enable AI.\n\nTo get an API key:\n1. Visit https://platform.openai.com/api-keys\n2. Create a new API key\n3. Run: set OPENAI_API_KEY=your_key_here' });
+  }
+
+  const payload = JSON.stringify({
+    model: 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 500,
+    temperature: 0.7
+  });
+
+  const options = {
+    hostname: 'api.openai.com',
+    port: 443,
+    path: '/v1/chat/completions',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    }
+  };
+
+  try {
+    const request = https.request(options, (response) => {
+      let data = '';
+      response.on('data', chunk => data += chunk);
+      response.on('end', () => {
+        if (response.statusCode !== 200) {
+          return res.json({ response: `OpenAI API Error ${response.statusCode}: ${data}` });
+        }
+        try {
+          const json = JSON.parse(data);
+          const answer = json.choices?.[0]?.message?.content || 'No response from AI';
+          res.json({ response: answer });
+        } catch (err) {
+          res.json({ response: `Parse error: ${err.message}` });
+        }
+      });
+    });
+
+    request.on('error', (err) => {
+      res.json({ response: `AI Error: ${err.message}` });
+    });
+
+    request.write(payload);
+    request.end();
+  } catch (err) {
+    res.json({ response: `AI Error: ${err.message}` });
+  }
 });
 
 function withTempFile(ext, content) {
@@ -89,8 +140,10 @@ function runCommand(lang, code) {
         run.on('close', s=>done(null,out,err,s));
       });
       return;
+    } else if (lang === 'html' || lang === 'css') {
+      return resolve({ ok: false, stdout: '', stderr: 'HTML/CSS should be handled by the browser, not the backend', code: 400 });
     } else {
-      return resolve({ ok: false, stdout: '', stderr: 'Unsupported language', code: 400 });
+      return resolve({ ok: false, stdout: '', stderr: 'Unsupported language: ' + lang, code: 400 });
     }
 
     let stdout = '', stderr = '';
