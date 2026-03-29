@@ -639,7 +639,6 @@
         <button id="importFileBtn">Import</button>
         <input id="fileUpload" type="file" class="hidden" />
         <button id="saveFileBtn">Save</button>
-        <button id="downloadFileBtn">Download</button>
         <button id="saveToPcBtn" title="Save As to PC for auto-syncing">Save to PC</button>
         <button id="runActiveBtn">Run Active</button>
         <button id="undoBtn">Undo</button>
@@ -2353,21 +2352,7 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       setRunOutputMessage('Saved');
     };
 
-    document.getElementById('downloadFileBtn').onclick = () => {
-      const file = getActiveFile();
-      if (!file) return;
-      persistCurrentState();
-      const blob = new Blob([file.code], { type: 'text/plain;charset=utf-8' });
-      const a = document.createElement('a');
-      const objectUrl = URL.createObjectURL(blob);
-      a.href = objectUrl;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      // Revoke the object URL to free memory
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
-    };
+
 
     const saveToPcBtn = document.getElementById('saveToPcBtn');
     if (saveToPcBtn) {
