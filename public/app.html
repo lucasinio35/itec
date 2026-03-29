@@ -1323,6 +1323,26 @@
             const data = JSON.parse(event.data);
             if (data.type === 'cursor-update') {
               updateRemoteCursor(data);
+            } else if (data.type === 'file-created') {
+              if (!state.files.find(f => f.id === data.file.id)) {
+                state.files.push(data.file);
+                if (!history[data.file.id]) history[data.file.id] = { undo: [], redo: [] };
+                renderFiles();
+                saveState();
+              }
+            } else if (data.type === 'file-deleted') {
+              state.files = state.files.filter(f => f.id !== data.fileId);
+              state.openTabs = state.openTabs.filter(id => id !== data.fileId);
+              delete history[data.fileId];
+              if (state.activeId === data.fileId) {
+                state.activeId = state.files[0]?.id || null;
+              }
+              if (state.activeId && !state.openTabs.includes(state.activeId)) {
+                state.openTabs.push(state.activeId);
+              }
+              renderFiles();
+              if (state.activeId) selectFile(state.activeId, { skipFlush: true });
+              saveState();
             }
           } catch (err) {
             console.warn('Sync message parse error:', err.message);
@@ -1366,6 +1386,7 @@
       loadState();
       renderFiles();
       renderAgents();
+      loadFilesFromServer();
       if (state.activeId) selectFile(state.activeId, { skipFlush: true });
     }
 
@@ -2234,7 +2255,9 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       } else {
         sessionStorage.removeItem('itecify-workspace-id');
       }
+      closeSyncWebSocket();
       loadWorkspaceState();
+      initializeSyncWebSocket();
       setRunOutputMessage(currentWorkspaceId
         ? 'Workspace changed to ' + (workspaces.find((workspace) => workspace.id === currentWorkspaceId)?.name || currentWorkspaceId)
         : 'Personal workspace selected.');
@@ -2400,6 +2423,8 @@ If the user asks you to modify the code, respond with ONLY the complete modified
         loadState();
         renderFiles();
         renderAgents();
+        loadFilesFromServer();
+        initializeSyncWebSocket();
         try {
           await initMonaco();
         } catch (editorErr) {

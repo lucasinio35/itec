@@ -30,5 +30,16 @@
       ]
     }
   ],
-  "files": []
+  "files": [
+    {
+      "id": "file-1774775308381-6bad0582ca567",
+      "workspaceId": "ws-1774748101295-3d8a3fe23baa28",
+      "name": "index.html",
+      "language": "html",
+      "code": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Hello</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n</body>\n</html>\n",
+      "createdAt": 1774775308397,
+      "updatedAt": 1774775308397,
+      "creatorId": "user-1774747142968-ed998365941838"
+    }
+  ]
 }
