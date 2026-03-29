@@ -5,6 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>iTECify IDE</title>
+  <link rel="icon" href="data:," />
   <style>
     :root {
       color-scheme: dark;
@@ -585,6 +586,33 @@
       background-color: rgba(100, 200, 100, 0.15) !important;
       border-left: 4px solid rgb(100, 200, 100) !important;
     }
+
+    /* Remote cursor styles */
+    .remote-cursor {
+      background-color: transparent !important;
+      border-radius: 0;
+      cursor: pointer;
+    }
+
+    .remote-cursor-label {
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 2px;
+      white-space: nowrap;
+      display: inline-block;
+      opacity: 0.85;
+    }
+
+    .cursor-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 6px;
+      border: 1px solid currentColor;
+      vertical-align: middle;
+    }
   </style>
   <link rel="stylesheet" data-name="vs/editor/editor.main"
     href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
@@ -659,7 +687,6 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   <script>
     const STORAGE_KEY_PREFIX = 'itecify-ide-state-v3';
     const DEFAULT_FILES = [
@@ -728,6 +755,13 @@
     let errorLineDecorations = [];
     let syncRootHandle = null;
     const TRACK_KEY = 'itecify-total-time-ms';
+
+    // Collaborative cursor tracking
+    let syncWebSocket = null;
+    let remoteCursors = {}; // { userId: { username, line, column, color } }
+    let remoteDecorations = {}; // { userId: decorationId }
+    const CURSOR_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+    let cursorColorIndex = 0;
     let visitStartedAt = Date.now();
 
     function flushTrackedTime() {
@@ -1226,6 +1260,7 @@
       currentUser = null;
       workspaces = [];
       currentWorkspaceId = '';
+      closeSyncWebSocket();
       localStorage.removeItem('itecify-auth-token');
       localStorage.removeItem('itecify-current-user');
       localStorage.removeItem('itecify-workspace-id');
@@ -1235,9 +1270,58 @@
 
     function destroyYjsProvider() { }
 
-    function initializeSyncWebSocket() { }
+    function initializeSyncWebSocket() {
+      if (syncWebSocket) return; // Already connected
+      if (!authToken || !currentWorkspaceId) return;
 
-    function closeSyncWebSocket() { }
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const url = `${protocol}//${host}/sync/${currentWorkspaceId}?token=${encodeURIComponent(authToken)}`;
+
+      try {
+        syncWebSocket = new WebSocket(url);
+        syncWebSocket.onopen = () => {
+          console.log('✓ Sync websocket connected');
+          // Send initial presence
+          if (currentUser) {
+            sendCursorUpdate();
+          }
+        };
+        syncWebSocket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'cursor-update') {
+              updateRemoteCursor(data);
+            }
+          } catch (err) {
+            console.warn('Sync message parse error:', err.message);
+          }
+        };
+        syncWebSocket.onerror = (err) => {
+          console.warn('Sync websocket error:', err);
+        };
+        syncWebSocket.onclose = () => {
+          console.log('Sync websocket closed');
+          syncWebSocket = null;
+          // Try to reconnect after 3 seconds
+          setTimeout(initializeSyncWebSocket, 3000);
+        };
+      } catch (err) {
+        console.warn('Failed to initialize sync websocket:', err.message);
+      }
+    }
+
+    function closeSyncWebSocket() {
+      if (syncWebSocket) {
+        syncWebSocket.close();
+        syncWebSocket = null;
+      }
+      // Clear all remote cursors
+      Object.keys(remoteCursors).forEach(userId => {
+        removeRemoteCursor(userId);
+      });
+      remoteCursors = {};
+    }
 
     function loadCollaborators() {
       const multiCursorList = document.getElementById('multiCursorList');
@@ -1448,6 +1532,7 @@
       updateCursor();
       saveState();
       initializeYjsProvider();
+      initializeSyncWebSocket();
       if (syncRootHandle) {
         syncFileToDisk(file);
       }
@@ -1550,22 +1635,142 @@
     }
 
     function updateCursor() {
+      let lineNumber = 1, column = 1;
+
       if (monacoEditor) {
         const position = monacoEditor.getPosition();
-        cursorPos.textContent = position
-          ? 'Ln ' + position.lineNumber + ', Col ' + position.column
-          : 'Ln 1, Col 1';
-        return;
-      }
-      if (!usingFallbackEditor) {
+        if (position) {
+          lineNumber = position.lineNumber;
+          column = position.column;
+        }
+        cursorPos.textContent = 'Ln ' + lineNumber + ', Col ' + column;
+      } else if (usingFallbackEditor) {
+        const value = fallbackEditorEl.value.slice(0, fallbackEditorEl.selectionStart);
+        const lines = value.split('\n');
+        lineNumber = lines.length;
+        column = (lines[lines.length - 1] || '').length + 1;
+        cursorPos.textContent = 'Ln ' + lineNumber + ', Col ' + column;
+      } else {
         cursorPos.textContent = 'Ln 1, Col 1';
         return;
       }
-      const value = fallbackEditorEl.value.slice(0, fallbackEditorEl.selectionStart);
-      const lines = value.split('\n');
-      const lineNumber = lines.length;
-      const column = (lines[lines.length - 1] || '').length + 1;
-      cursorPos.textContent = 'Ln ' + lineNumber + ', Col ' + column;
+
+      // Broadcast cursor to collaborators
+      sendCursorUpdate(lineNumber, column);
+    }
+
+    function sendCursorUpdate(lineNumber, column) {
+      if (!syncWebSocket || syncWebSocket.readyState !== WebSocket.OPEN) return;
+      if (!currentUser || !state.activeId) return;
+
+      const message = {
+        type: 'cursor-update',
+        userId: currentUser.id,
+        username: currentUser.username,
+        fileId: state.activeId,
+        line: lineNumber || 1,
+        column: column || 1
+      };
+
+      try {
+        syncWebSocket.send(JSON.stringify(message));
+      } catch (err) {
+        console.warn('Failed to send cursor update:', err.message);
+      }
+    }
+
+    function updateRemoteCursor(data) {
+      if (data.userId === currentUser?.id) return; // Ignore own cursor
+      if (data.fileId !== state.activeId) return; // Only show cursors in current file
+
+      if (!remoteCursors[data.userId]) {
+        const color = CURSOR_COLORS[cursorColorIndex % CURSOR_COLORS.length];
+        const cssClass = 'remote-user-' + data.userId.replace(/[^a-zA-Z0-9]/g, '');
+        remoteCursors[data.userId] = {
+          username: data.username,
+          color: color,
+          cssClass: cssClass
+        };
+        cursorColorIndex++;
+
+        if (!document.getElementById('style-' + cssClass)) {
+          const style = document.createElement('style');
+          style.id = 'style-' + cssClass;
+          style.textContent = `.${cssClass} { border-left: 2px solid ${color} !important; border-right: none !important; margin-left: -2px; }`;
+          document.head.appendChild(style);
+        }
+      }
+
+      const cursor = remoteCursors[data.userId];
+      cursor.line = data.line;
+      cursor.column = data.column;
+      cursor.timestamp = Date.now();
+
+      renderRemoteCursor(data.userId);
+      updateCollaboratorsDisplay();
+    }
+
+    function renderRemoteCursor(userId) {
+      if (!monacoEditor) return;
+
+      const cursor = remoteCursors[userId];
+      if (!cursor) return;
+
+      // Remove old decoration if exists
+      if (remoteDecorations[userId]) {
+        monacoEditor.deltaDecorations(
+          [remoteDecorations[userId]],
+          []
+        );
+      }
+
+      // Create new cursor decoration
+      const decorations = monacoEditor.deltaDecorations(
+        [],
+        [{
+          range: new monaco.Range(cursor.line, cursor.column, cursor.line, cursor.column + 1),
+          options: {
+            isWholeLine: false,
+            className: 'remote-cursor ' + (cursor.cssClass || ''),
+            glyphMarginClassName: 'remote-cursor-glyph',
+            glyphMarginHoverMessage: { value: cursor.username + '\'s cursor' },
+            stickiness: 1, // NeverGrowsWhenTypingAtEdges
+            after: {
+              content: cursor.username,
+              inlineClassName: 'remote-cursor-label',
+              color: cursor.color,
+              backgroundColor: cursor.color + '20'
+            }
+          }
+        }]
+      );
+
+      remoteDecorations[userId] = decorations[0];
+    }
+
+    function removeRemoteCursor(userId) {
+      if (remoteDecorations[userId]) {
+        monacoEditor?.deltaDecorations([remoteDecorations[userId]], []);
+        delete remoteDecorations[userId];
+      }
+      delete remoteCursors[userId];
+      updateCollaboratorsDisplay();
+    }
+
+    function updateCollaboratorsDisplay() {
+      const multiCursorStatus = document.getElementById('multiCursorStatus');
+      if (!multiCursorStatus) return;
+
+      const users = Object.entries(remoteCursors).map(([_, cursor]) => {
+        const indicator = `<span class="cursor-indicator" style="background-color: ${cursor.color}"></span>`;
+        return `${indicator}<span style="color: ${cursor.color}; opacity: 0.9;">${cursor.username}</span>`;
+      });
+
+      if (users.length === 0) {
+        multiCursorStatus.innerHTML = 'Collaborators: <span id="multiCursorList">None</span>';
+      } else {
+        multiCursorStatus.innerHTML = `Collaborators (${users.length}): <span id="multiCursorList">${users.join(', ')}</span>`;
+      }
     }
 
     function getFirstHtmlFile(preferredId) {
@@ -1777,15 +1982,15 @@ If the user asks you to modify the code, respond with ONLY the complete modified
         }
         const data = await res.json();
         const text = data.response || '[No response]';
-        
+
         // Try to extract code block
         const codeBlockRegex = /```([a-zA-Z0-9]*)?\s*([\s\S]*?)```/;
         const match = text.match(codeBlockRegex);
-        
+
         if (match && match[2]) {
           const suggestedCode = match[2].trim();
           const suggestionId = 'suggestion-' + Date.now();
-          
+
           // Store the suggestion
           pendingAISuggestion = {
             id: suggestionId,
@@ -1793,10 +1998,10 @@ If the user asks you to modify the code, respond with ONLY the complete modified
             fileId: file.id,
             original: file.code
           };
-          
+
           // Show visual diff in editor
           showAISuggestionInEditor(suggestedCode, file.code, file.language);
-          
+
           // Show in panel
           suggestionsEl.innerHTML = `<div style="background:rgba(100,200,100,0.1);padding:10px;border-radius:4px;margin-bottom:10px;border:1px solid rgba(100,200,100,0.3);">
             <div style="color:#8f8;margin-bottom:8px;font-weight:bold;">✓ Code modification suggested</div>
@@ -1816,20 +2021,20 @@ If the user asks you to modify the code, respond with ONLY the complete modified
         setRunOutputMessage('AI error: ' + (err.message || err), true);
       }
     };
-    
+
     const showAISuggestionInEditor = (suggestedCode, originalCode, language) => {
       if (!monacoEditor) return;
-      
+
       // Clear previous decorations
       if (monacoEditor._aiDecorations) {
         monacoEditor.deltaDecorations(monacoEditor._aiDecorations, []);
       }
-      
+
       // Create decorations for changed lines
       const originalLines = originalCode.split('\n');
       const suggestedLines = suggestedCode.split('\n');
       const decorations = [];
-      
+
       // Simple line-by-line comparison
       for (let i = 0; i < Math.max(originalLines.length, suggestedLines.length); i++) {
         if (originalLines[i] !== suggestedLines[i]) {
@@ -1845,13 +2050,13 @@ If the user asks you to modify the code, respond with ONLY the complete modified
           });
         }
       }
-      
+
       monacoEditor._aiDecorations = monacoEditor.deltaDecorations(
         monacoEditor._aiDecorations || [],
         decorations
       );
     };
-    
+
     const clearAISuggestionDecorations = () => {
       if (monacoEditor && monacoEditor._aiDecorations) {
         monacoEditor.deltaDecorations(monacoEditor._aiDecorations, []);
@@ -1865,37 +2070,37 @@ If the user asks you to modify the code, respond with ONLY the complete modified
         console.warn('No pending suggestion');
         return;
       }
-      
+
       const file = getActiveFile();
       if (!file || file.id !== pendingAISuggestion.fileId) {
         console.warn('File mismatch');
         return;
       }
-      
+
       // Update file code and editor
       history[file.id].undo.push(file.code);
       history[file.id].redo = [];
       file.code = pendingAISuggestion.code;
-      
+
       if (monacoEditor) {
         monacoEditor.setValue(pendingAISuggestion.code);
       }
-      
+
       clearAISuggestionDecorations();
       pendingAISuggestion = null;
-      
+
       saveState();
       broadcastFileUpdate(file);
-      
+
       // Save to server
       if (authToken && currentWorkspaceId) {
         saveFileToServer(file);
       }
-      
+
       setRunOutputMessage('✓ AI changes applied to ' + file.name);
       agentPanelSuggestions.textContent = 'Changes applied! Type a new prompt to continue.';
     };
-    
+
     window.rejectAISuggestion = () => {
       clearAISuggestionDecorations();
       pendingAISuggestion = null;

@@ -11,6 +11,12 @@
       "username": "lucasinio35",
       "email": "lucapelin91@gmail.com",
       "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+    },
+    {
+      "id": "user-1774769145939-363ffc69e2a33",
+      "username": "Dragos",
+      "email": "g@gmail.com",
+      "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
     }
   ],
   "workspaces": [
@@ -19,7 +25,8 @@
       "name": "My Workspace",
       "ownerId": "user-1774747142968-ed998365941838",
       "members": [
-        "user-1774747142968-ed998365941838"
+        "user-1774747142968-ed998365941838",
+        "user-1774769145939-363ffc69e2a33"
       ]
     }
   ],

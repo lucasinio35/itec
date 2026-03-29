@@ -854,6 +854,18 @@ syncWss.on('connection', (ws, req) => {
   
   console.log(`✓ Sync client connected: ${workspaceId} (${yjs_rooms.get(roomId).size} clients)`);
   
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      if (data.type === 'cursor-update') {
+        // Broadcast cursor updates to all other clients in the workspace
+        broadcastToWorkspace(workspaceId, data, data.userId);
+      }
+    } catch (err) {
+      console.warn('Sync message parse error:', err.message);
+    }
+  });
+  
   ws.on('close', () => {
     const room = yjs_rooms.get(roomId);
     if (room) {
