@@ -19,47 +19,6 @@
         --danger: #ff8f8f;
       }
       * { box-sizing: border-box; }
-<<<<<<< Updated upstream
-      html, body { overflow-x: hidden; max-width: 100vw; }
-      body { margin:0; font-family: Segoe UI, Roboto, Arial, sans-serif; background:#1e1e1e; color:#ddd; min-height:100vh; overflow-x: hidden; }
-      .container { display:grid; grid-template-rows:auto 1fr; height:100vh; overflow: hidden; }
-      .top { background:#252526; border-bottom:1px solid #333; padding:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; overflow-x:auto; }
-      .top h1 { margin:0; font-size:16px; color:#fff; white-space:nowrap; }
-      .top .controls { display:inline-flex; gap:8px; flex-wrap:wrap; align-items:center; flex:1; }
-      .top .dropdown { position:relative; margin-left: auto; }
-      .top button, .top select, .top input { background:#2a2a2f; border:1px solid #444; color:#eee; border-radius:4px; padding:5px 8px; font-size:13px; cursor:pointer; white-space:nowrap; }
-      .top .dropdown-content { display:none; position:fixed; right:20px; top:50px; background:#252526; border:1px solid #444; border-radius:4px; min-width:160px; z-index:999999; margin-top:4px; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
-      .top .dropdown-content.show { display:block; }
-      .top .dropdown-content button { display:block; width:100%; text-align:left; border:none; border-radius:0; padding:8px 12px; background:transparent; }
-      .top .dropdown-content button:hover { background:#353540; }
-      .top .dropdown-toggle { display:flex; align-items:center; gap:4px; }
-      .top .dropdown-arrow { font-size:10px; }
-      .top button:hover, .top select:hover { background:#353540; }
-      .main { display:grid; grid-template-columns:220px 1fr; min-height:0; overflow: hidden; }
-      .sidebar { background:#20202a; border-right:1px solid #333; display:flex; flex-direction:column; min-height:0; overflow: hidden; max-width: 220px; }
-      .panel-title { font-size:11px; color:#a0a7b0; text-transform:uppercase; padding:8px; border-bottom:1px solid #333; margin:0; white-space:nowrap; }
-      .file-list, .agent-list { overflow:auto; padding:6px; flex:1; }
-      .file-item, .agent-item { background:#2b2c33; color:#e1e1e1; margin-bottom:6px; border-radius:4px; border:1px solid #3c3d46; padding:6px 8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; font-size:13px; overflow:hidden; }
-      .file-item span, .agent-item span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-      .file-item button, .agent-item button { background:#3a3a40; border:1px solid #555; color:#ccc; border-radius:3px; padding:2px 6px; font-size:11px; cursor:pointer; flex-shrink:0; }
-      .file-item button:hover, .agent-item button:hover { background:#454550; }
-      .file-item.active, .agent-item.active { border-color:#5f9cff; background:#32354e; }
-      .agent-panel { background:#252536; border:1px solid #444; border-radius:6px; margin:8px 6px 0px 6px; padding:8px; overflow:hidden; }
-      .agent-panel.hidden { display:none; }
-      .agent-panel h3 { margin:0 0 8px 0; font-size:12px; color:#fff; white-space:nowrap; }
-      .agent-panel textarea { width:100%; height:70px; margin-bottom:6px; background:#1f2132; border:1px solid #444; color:#eee; padding:6px; font-family:Consolas, Monaco, monospace; font-size:12px; }
-      .agent-panel .agent-suggestions { background:#1b1c28; border:1px solid #444; border-radius:4px; padding:6px; color:#c8d0e0; font-size:12px; height:110px; overflow:auto; white-space:pre-wrap; }
-      .agent-panel .agent-buttons { display:flex; gap:6px; margin-top:8px; }
-      .agent-panel .agent-buttons button { flex:1; background:#2a2a3a; border:1px solid #444; color:#eee; border-radius:4px; padding:6px; font-size:12px; cursor:pointer; }
-      .editor-wrap { display:flex; flex-direction:column; min-height:0; overflow: hidden; flex:1; }
-      .tabbar { background:#1f1f24; display:flex; border-bottom:1px solid #333; overflow-x:auto; }
-      .tab { cursor:pointer; color:#ccc; padding:8px 10px; font-size:13px; border-right:1px solid #2f2f3b; white-space:nowrap; flex-shrink:0; }
-      .tab:hover { background:#2a2a33; }
-      .tab.active { background:#2c2f45; color:#fff; border-bottom:3px solid #5f9cff; }
-      #codeEditor { flex:1; min-height:0; overflow: hidden; }
-      .status { background:#16171f; border-top:1px solid #333; color:#9da5b8; padding:6px 10px; display:flex; justify-content:space-between; font-size:12px; overflow:hidden; }
-      .output { background:#101118; color:#c8d0e0; border-top:1px solid #333; padding:10px; font-family:Consolas, Monaco, monospace; font-size:12px; overflow:auto; height:170px; white-space:pre-wrap; max-width:100%; }
-=======
       body {
         margin:0;
         font-family: Segoe UI, Roboto, Arial, sans-serif;
@@ -323,7 +282,6 @@
       }
       .output.error-output { color:var(--danger); }
       .monaco-editor .error-line-highlight { background:rgba(255, 82, 82, 0.14); }
->>>>>>> Stashed changes
       .hidden { display:none; }
       .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:1000; }
       .modal { background:var(--panel-strong); border:1px solid var(--line); border-radius:20px; padding:20px; width:90%; max-width:600px; max-height:80vh; overflow:auto; backdrop-filter:blur(16px); }
@@ -358,12 +316,8 @@
       <div class="top">
         <h1>iTECify IDE</h1>
         <div class="controls">
-<<<<<<< Updated upstream
-          <span id="loggedUser" style="color:#8f8; margin-right:16px; font-size:12px">Loading...</span>
-=======
           <button id="accountBtn" class="account-btn">Account</button>
           <button id="loginBtn">Login</button>
->>>>>>> Stashed changes
           <select id="workspaceSelect" title="Workspace" style="min-width:150px"></select>
           <button id="newFileBtn">New File</button>
           <button id="importFileBtn">Import</button>
@@ -378,10 +332,7 @@
         <div class="dropdown">
           <button id="menuBtn" class="dropdown-toggle">Menu <span class="dropdown-arrow">▼</span></button>
           <div id="menuDropdown" class="dropdown-content">
-<<<<<<< Updated upstream
-=======
             <button id="homepageBtn">Homepage</button>
->>>>>>> Stashed changes
             <button id="createWorkspaceBtn">Create Workspace</button>
             <button id="addMemberBtn">Add Member</button>
             <button id="logoutBtn">Logout</button>
@@ -408,14 +359,10 @@
         </aside>
         <section class="editor-wrap">
           <div class="tabbar" id="tabBar"></div>
-<<<<<<< Updated upstream
-          <div id="codeEditor" style="flex:1;min-height:0;"></div>
-=======
           <div class="editor-host">
             <div id="codeEditor"></div>
             <textarea id="fallbackEditor" spellcheck="false"></textarea>
           </div>
->>>>>>> Stashed changes
           <div class="status"><span id="statusFile">No file selected</span><span id="cursorPos">Ln 1, Col 1</span></div>
           <div class="status" id="multiCursorStatus">Collaborators: <span id="multiCursorList">None</span></div>
           <div class="output" id="runOutput">Output will appear here.</div>
@@ -423,16 +370,6 @@
       </div>
     </div>
 
-<<<<<<< Updated upstream
-    <script type="module">
-      import * as Y from 'yjs';
-      import { WebsocketProvider } from 'y-websocket';
-      window.Y = Y;
-      window.YJS_WEBSOCKET = WebsocketProvider;
-      
-      const STORAGE_KEY = 'itecify-ide-state-v2';
-      const DEFAULT_FILES = [];
-=======
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
     <script>
       const STORAGE_KEY_PREFIX = 'itecify-ide-state-v3';
@@ -441,7 +378,6 @@
         { id:'file-py', name:'main.py', language:'python', code:'# Hello from Python\nprint("Hello, World!")\n' },
         { id:'file-html', name:'index.html', language:'html', code:'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Hello</title></head><body><h1>Hello, World!</h1></body></html>' }
       ];
->>>>>>> Stashed changes
       const TEMPLATES = {
         nodejs:'// Hello from JavaScript\nconsole.log("Hello, World!");\n',
         python:'# Hello from Python\nprint("Hello, World!")\n',
@@ -456,18 +392,6 @@
       const fileUpload = document.getElementById('fileUpload');
       const fileListEl = document.getElementById('fileList');
       const tabBarEl = document.getElementById('tabBar');
-<<<<<<< Updated upstream
-      const codeEditorContainer = document.getElementById('codeEditor');
-      const statusFile = document.getElementById('statusFile');
-      const cursorPos = document.getElementById('cursorPos');
-      const runOutput = document.getElementById('runOutput');
-      const logoutBtn = document.getElementById('logoutBtn');
-      const loggedUserLabel = document.getElementById('loggedUser');
-      const workspaceSelect = document.getElementById('workspaceSelect');
-      const createWorkspaceBtn = document.getElementById('createWorkspaceBtn');
-      const addMemberBtn = document.getElementById('addMemberBtn');
-      const agentListEl = document.getElementById('agentList');
-=======
       const codeEditorEl = document.getElementById('codeEditor');
       const fallbackEditorEl = document.getElementById('fallbackEditor');
       const accountBtn = document.getElementById('accountBtn');
@@ -482,84 +406,11 @@
       const statusFile = document.getElementById('statusFile');
       const cursorPos = document.getElementById('cursorPos');
       const runOutput = document.getElementById('runOutput');
->>>>>>> Stashed changes
       const agentPanel = document.getElementById('agentPanel');
       const agentPanelTitle = document.getElementById('agentPanelTitle');
       const agentPanelPrompt = document.getElementById('agentPanelPrompt');
       const agentPanelSuggestions = document.getElementById('agentPanelSuggestions');
       const agentPanelSubmitBtn = document.getElementById('agentPanelSubmitBtn');
-      const agentPanelHideBtn = document.getElementById('agentPanelHideBtn');
-
-      let monacoEditor = null;
-
-      function getMonacoLanguage(lang) {
-        const map = { nodejs:'javascript', python:'python', rust:'rust', c:'c', cpp:'cpp', csharp:'csharp', html:'html', css:'css', js:'javascript' };
-        return map[lang] || 'plaintext';
-      }
-
-      function initMonaco() {
-        return new Promise((resolve) => {
-          require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
-          require(['vs/editor/editor.main'], function () {
-            monacoEditor = monaco.editor.create(codeEditorContainer, {
-              value: '',
-              language: 'javascript',
-              theme: 'vs-dark',
-              automaticLayout: true,
-              fontSize: 14,
-              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-              minimap: { enabled: true },
-              scrollBeyondLastLine: false,
-              renderWhitespace: 'selection',
-              tabSize: 2,
-              insertSpaces: true,
-              wordWrap: 'off',
-              lineNumbers: 'on',
-              glyphMargin: true,
-              folding: true,
-              lineDecorationsWidth: 10,
-              lineNumbersMinChars: 3
-            });
-
-            monacoEditor.onDidChangeModelContent(() => {
-              if (!state.activeId) return;
-              const file = getActiveFile();
-              if (!file) return;
-              const newCode = monacoEditor.getValue();
-              if (file.code !== newCode) {
-                file.code = newCode;
-                clearTimeout(undoDebounceTimer);
-                undoDebounceTimer = setTimeout(() => {
-                  history[file.id].undo.push(newCode);
-                  history[file.id].redo = [];
-                }, 500);
-                saveState();
-                broadcastFileUpdate(file);
-                // Auto-sync to folder if configured
-                if (syncRootHandle) {
-                  syncFileToDisk(file);
-                }
-              }
-            });
-
-            monacoEditor.onDidChangeCursorPosition((e) => {
-              cursorPos.textContent = 'Ln ' + e.position.lineNumber + ', Col ' + e.position.column;
-              setLocalCursorFromMonaco();
-            });
-
-            monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-              flushCurrentFile();
-              saveState();
-              runOutput.textContent = 'Saved';
-            });
-
-            monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ, () => undo());
-            monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyY, () => redo());
-
-            resolve();
-          });
-        });
-      }
 
       function getLanguageFromExtension(filename) {
         const ext = filename.split('.').pop().toLowerCase();
@@ -567,498 +418,15 @@
         return extMap[ext] || 'nodejs';
       }
 
-<<<<<<< Updated upstream
-      function generateColorFromUsername(username) {
-        let hash = 0;
-        for (let i = 0; i < username.length; i++) {
-          const char = username.charCodeAt(i);
-          hash = ((hash << 5) - hash) + char;
-          hash = hash & hash; // Convert to 32bit integer
-        }
-        const colors = ['#5fa1ff', '#5dd9ff', '#60d8a9', '#ffa06d', '#e89af9'];
-        return colors[Math.abs(hash) % colors.length];
-      }
-
-      let collaborators = [];
-      const COLOR_SCHEMES = {
-        local: '#6cf',      // Green for "you"
-        remote: ['#5fa1ff', '#5dd9ff', '#60d8a9', '#ffa06d', '#e89af9'], // Blue shades for other members
-        ai: '#f9a'          // Pink for AI Agent
-      };
-      let remoteColorIndex = 0;
-
-      const multiCursorList = document.getElementById('multiCursorList');
-
-      async function loadCollaborators() {
-        if (!currentWorkspaceId || !authToken) {
-          collaborators = [{ id: 'ai', name: 'AI Agent', color: COLOR_SCHEMES.ai, line: 1, col: 1, isAI: true }];
-          renderCollaboratorCursors();
-          return;
-        }
-        
-        try {
-          const resp = await fetch(`/api/workspaces/${currentWorkspaceId}/members`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          });
-          const data = await resp.json();
-          collaborators = [];
-          
-          // Add workspace members with color coding
-          remoteColorIndex = 0;
-          if (Array.isArray(data.members)) {
-            data.members.forEach(member => {
-              const isLocalUser = currentUser && currentUser.id === member.id;
-              collaborators.push({
-                id: member.id,
-                name: isLocalUser ? `${member.username} (you)` : member.username,
-                color: isLocalUser ? COLOR_SCHEMES.local : COLOR_SCHEMES.remote[remoteColorIndex % COLOR_SCHEMES.remote.length],
-                line: 1,
-                col: 1,
-                isAI: false
-              });
-              if (!isLocalUser) remoteColorIndex++;
-            });
-          }
-          
-          // Add AI Agent at the end
-          collaborators.push({
-            id: 'ai',
-            name: 'AI Agent',
-            color: COLOR_SCHEMES.ai,
-            line: 1,
-            col: 1,
-            isAI: true
-          });
-          
-          renderCollaboratorCursors();
-        } catch (err) {
-          console.warn('Failed to load collaborators:', err);
-          collaborators = [{ id: 'ai', name: 'AI Agent', color: COLOR_SCHEMES.ai, line: 1, col: 1, isAI: true }];
-          renderCollaboratorCursors();
-        }
-      }
-
-      function renderCollaboratorCursors() {
-        multiCursorList.innerHTML = collaborators
-          .map(c => {
-            const type = c.isAI ? ' (AI)' : (c.id === 'local' ? ' (local)' : ' (member)');
-            return `<span style="color:${c.color}; padding-right:12px; font-weight:500">${c.name}: Ln ${c.line}, Col ${c.col}${type}</span>`;
-          })
-          .join('');
-      }
-      
-      function updateCollaboratorsFromAwareness() {
-        if (!yjsProvider || !yjsProvider.awareness) return;
-        
-        const states = yjsProvider.awareness.getStates();
-        const myClientId = yjsDocument.clientID;
-        
-        // Track unique users by their ID/name, not clientId
-        const uniqueUsers = new Map();
-        
-        states.forEach((state, clientId) => {
-          if (state.user && clientId !== myClientId) {
-            const username = state.user.name || 'Anonymous';
-            // Use username as key to deduplicate
-            if (!uniqueUsers.has(username)) {
-              uniqueUsers.set(username, {
-                id: 'awareness-' + username,
-                name: username,
-                color: generateColorFromUsername(username),
-                line: 1,
-                col: 1,
-                isAI: false
-              });
-            }
-          }
-        });
-        
-        collaborators = [];
-        
-        // Add unique remote users
-        uniqueUsers.forEach(user => {
-          collaborators.push(user);
-        });
-        
-        // Add local user
-        if (currentUser) {
-          collaborators.push({
-            id: currentUser.id,
-            name: currentUser.username + ' (you)',
-            color: COLOR_SCHEMES.local,
-            line: 1,
-            col: 1,
-            isAI: false
-          });
-        }
-        
-        // Add AI Agent
-        collaborators.push({
-          id: 'ai',
-          name: 'AI Agent',
-          color: COLOR_SCHEMES.ai,
-          line: 1,
-          col: 1,
-          isAI: true
-        });
-        
-        renderCollaboratorCursors();
-      }
-
-      function setLocalCursorFromMonaco() {
-        if (!monacoEditor) return;
-        const pos = monacoEditor.getPosition();
-        if (!pos) return;
-        
-        // Update local display
-        const localUser = collaborators.find(c => !c.isAI && (c.id === currentUser?.id || c.name.includes('(you)')));
-        if (localUser) {
-          localUser.line = pos.lineNumber;
-          localUser.col = pos.column;
-        }
-        renderCollaboratorCursors();
-        
-        // Broadcast cursor position via awareness
-        if (yjsProvider && yjsProvider.awareness) {
-          const currentState = yjsProvider.awareness.getLocalState() || {};
-          yjsProvider.awareness.setLocalStateField('user', {
-            ...currentState.user,
-            cursor: {
-              line: pos.lineNumber,
-              col: pos.column
-            }
-          });
-        }
-      }
-
-      // Real cursor sync is handled by Yjs awareness (see initializeYjsProvider)
-
-      let state = { files: [], activeId: null, agents: [{id:'agent-code', name:'Code Assistant'}] };
-=======
       function getStorageKey() {
         return STORAGE_KEY_PREFIX + ':' + (currentWorkspaceId || 'local');
       }
 
       let state = { files: [], activeId: null, openTabs: [], agents: [{id:'agent-code', name:'Code Assistant'}] };
->>>>>>> Stashed changes
       let history = {};
       let isUndoRedo = false;
       let currentAgentId = null;
       let undoDebounceTimer = null;
-<<<<<<< Updated upstream
-      let authToken = localStorage.getItem('itecify-auth-token') || null;
-      let currentUser = null;
-      let currentWorkspaceId = localStorage.getItem('itecify-workspace-id') || null;
-      
-      // File System Access API - for sync folder
-      let syncRootHandle = null;
-      let fileHandles = {};
-      const SYNC_KEY = 'itecify-sync-folder-verified';
-      
-      // WebSocket for file sync
-      let syncWs = null;
-      let syncWsReconnectTimer = null;
-      
-      // Yjs WebSocket synchronization
-      let yjsProvider = null;
-      let yjsDocument = null;
-      let yjsText = null;
-
-      function initializeYjsProvider() {
-        if (yjsProvider) {
-          yjsProvider.destroy();
-        }
-
-        if (!currentWorkspaceId || !authToken || !state.activeId) return;
-        if (typeof window.Y === 'undefined') { console.warn('Y not loaded'); return; }
-
-        try {
-          const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-          // Server URL with /yjs prefix, room name is separate
-          const serverUrl = `${wsProtocol}//${location.host}/yjs`;
-          const roomName = `${currentWorkspaceId}/${state.activeId}`;
-          const params = { token: authToken };
-          
-          yjsDocument = new window.Y.Doc();
-          yjsText = yjsDocument.getText('shared-code');
-          yjsProvider = new window.YJS_WEBSOCKET(serverUrl, roomName, yjsDocument, { params });
-          
-          if (monacoEditor && yjsProvider.awareness) {
-            yjsProvider.awareness.setLocalStateField('user', {
-              name: currentUser ? currentUser.username : 'Anonymous',
-              color: generateColorFromUsername(currentUser ? currentUser.username : 'Anonymous')
-            });
-            
-            // Listen for awareness changes (other users' cursor positions)
-            yjsProvider.awareness.on('change', () => {
-              updateCollaboratorsFromAwareness();
-            });
-          }
-          
-          console.log(`✓ YJS WebSocket connected to: ${serverUrl}, room: ${roomName}`);
-          
-          const file = getActiveFile();
-          if (file && yjsText.length === 0) {
-            yjsText.insert(0, file.code);
-          }
-          
-          let isRemoteChange = false;
-          yjsText.observe(event => {
-            isRemoteChange = true;
-            const file = getActiveFile();
-            if (!file) return;
-            file.code = yjsText.toString();
-            if (monacoEditor) {
-              const currentValue = monacoEditor.getValue();
-              if (currentValue !== file.code) {
-                monacoEditor.setValue(file.code);
-              }
-            }
-            broadcastFileUpdate(file);
-            isRemoteChange = false;
-          });
-
-          if (monacoEditor) {
-            monacoEditor.onDidChangeModelContent(() => {
-              if (isRemoteChange) return;
-              const file = getActiveFile();
-              if (!file) return;
-              const newCode = monacoEditor.getValue();
-              if (file.code !== newCode) {
-                const oldCode = file.code;
-                file.code = newCode;
-                yjsText.delete(0, yjsText.length);
-                yjsText.insert(0, newCode);
-                saveState();
-                broadcastFileUpdate(file);
-              }
-            });
-          }
-        } catch (err) {
-          console.warn('YJS provider initialization failed:', err);
-        }
-      }
-
-      function destroyYjsProvider() {
-        if (yjsProvider) {
-          yjsProvider.destroy();
-          yjsProvider = null;
-        }
-        if (yjsDocument) {
-          yjsDocument.destroy();
-          yjsDocument = null;
-        }
-        yjsText = null;
-      }
-      
-      // Sync WebSocket for file-level updates (create, delete, rename)
-      function initializeSyncWebSocket() {
-        if (!currentWorkspaceId || !authToken) return;
-        
-        closeSyncWebSocket();
-        
-        try {
-          const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const wsUrl = `${wsProtocol}//${location.host}/sync/${currentWorkspaceId}?token=${authToken}`;
-          
-          syncWs = new WebSocket(wsUrl);
-          
-          syncWs.onopen = () => {
-            console.log('✓ Sync WebSocket connected');
-          };
-          
-          syncWs.onmessage = (event) => {
-            try {
-              const msg = JSON.parse(event.data);
-              handleSyncMessage(msg);
-            } catch (err) {
-              // Probably a Yjs binary message, ignore
-            }
-          };
-          
-          syncWs.onclose = () => {
-            console.log('Sync WebSocket closed, reconnecting in 3s...');
-            syncWsReconnectTimer = setTimeout(() => {
-              if (currentWorkspaceId && authToken) {
-                initializeSyncWebSocket();
-              }
-            }, 3000);
-          };
-          
-          syncWs.onerror = (err) => {
-            console.warn('Sync WebSocket error:', err);
-          };
-        } catch (err) {
-          console.warn('Failed to initialize sync WebSocket:', err);
-        }
-      }
-      
-      function closeSyncWebSocket() {
-        if (syncWsReconnectTimer) {
-          clearTimeout(syncWsReconnectTimer);
-          syncWsReconnectTimer = null;
-        }
-        if (syncWs) {
-          syncWs.close();
-          syncWs = null;
-        }
-      }
-      
-      function handleSyncMessage(msg) {
-        if (msg.type === 'file-created') {
-          // A new file was created by another user
-          if (!state.files.find(f => f.id === msg.file.id)) {
-            state.files.push(msg.file);
-            history[msg.file.id] = {undo:[], redo:[]};
-            renderFiles();
-            runOutput.textContent = `✓ New file created: ${msg.file.name}`;
-          }
-        } else if (msg.type === 'file-updated') {
-          // A file was updated by another user
-          const file = state.files.find(f => f.id === msg.file.id);
-          if (file) {
-            // Only update if not currently editing this file
-            if (state.activeId !== file.id || !document.activeElement?.closest('#codeEditor')) {
-              file.name = msg.file.name;
-              file.language = msg.file.language;
-              file.code = msg.file.code;
-              file.updatedAt = msg.file.updatedAt;
-              if (state.activeId === file.id && monacoEditor) {
-                const currentCode = monacoEditor.getValue();
-                if (currentCode !== file.code) {
-                  monacoEditor.setValue(file.code);
-                }
-              }
-              renderFiles();
-            }
-          }
-        } else if (msg.type === 'file-deleted') {
-          // A file was deleted by another user
-          const idx = state.files.findIndex(f => f.id === msg.fileId);
-          if (idx !== -1) {
-            const deletedFile = state.files[idx];
-            state.files.splice(idx, 1);
-            delete history[msg.fileId];
-            if (state.activeId === msg.fileId) {
-              state.activeId = state.files[0]?.id || null;
-            }
-            renderFiles();
-            if (state.activeId) selectFile(state.activeId);
-            runOutput.textContent = `File deleted: ${deletedFile.name}`;
-          }
-        }
-      }
-      
-      function sendSyncMessage(msg) {
-        if (syncWs && syncWs.readyState === WebSocket.OPEN) {
-          syncWs.send(JSON.stringify(msg));
-        }
-      }
-
-      // File System Access API - Sync Folder
-      async function selectSyncFolder() {
-        if (!('showDirectoryPicker' in window)) {
-          alert('File System Access API not supported. Use Chrome/Edge.');
-          return;
-        }
-        try {
-          syncRootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-          localStorage.setItem(SYNC_KEY, 'true');
-          await syncAllFiles();
-          runOutput.textContent = '✓ Sync folder selected: ' + syncRootHandle.name;
-          updateSyncButton();
-        } catch (err) {
-          if (err.name !== 'AbortError') {
-            console.warn('Sync folder error:', err);
-          }
-        }
-      }
-
-      async function syncAllFiles() {
-        if (!syncRootHandle) return;
-        for (const file of state.files) {
-          await syncFileToDisk(file);
-        }
-      }
-
-      async function syncFileToDisk(file) {
-        if (!syncRootHandle) return;
-        try {
-          let folderHandle = syncRootHandle;
-          const parts = file.name.split('/');
-          if (parts.length > 1) {
-            for (let i = 0; i < parts.length - 1; i++) {
-              folderHandle = await folderHandle.getDirectoryHandle(parts[i], { create: true });
-            }
-          }
-          const fileHandle = await folderHandle.getFileHandle(parts[parts.length - 1], { create: true });
-          const writable = await fileHandle.createWritable();
-          await writable.write(file.code);
-          await writable.close();
-          fileHandles[file.id] = fileHandle;
-        } catch (err) {
-          console.warn('Sync file error:', file.name, err);
-        }
-      }
-
-      async function saveAsWithDialog() {
-        const file = getActiveFile();
-        if (!file) return;
-        
-        if ('showSaveFilePicker' in window) {
-          try {
-            const handle = await window.showSaveFilePicker({
-              suggestedName: file.name,
-              types: [{
-                description: 'All Files',
-                accept: { '*/*': [] }
-              }]
-            });
-            const writable = await handle.createWritable();
-            await writable.write(monacoEditor ? monacoEditor.getValue() : file.code);
-            await writable.close();
-            runOutput.textContent = '✓ Saved: ' + handle.name;
-          } catch (err) {
-            if (err.name !== 'AbortError') {
-              console.warn('Save as error:', err);
-              runOutput.textContent = 'Save cancelled or error';
-            }
-          }
-        } else {
-          // Fallback for browsers without File System Access API
-          downloadFileFallback(file);
-        }
-      }
-
-      function downloadFileFallback(file) {
-        const code = monacoEditor ? monacoEditor.getValue() : file.code;
-        const blob = new Blob([code], { type:'text/plain;charset=utf-8' });
-        const a = document.createElement('a');
-        const objectUrl = URL.createObjectURL(blob);
-        a.href = objectUrl;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
-      }
-
-      function updateSyncButton() {
-        const btn = document.getElementById('syncFolderBtn');
-        if (btn) {
-          if (syncRootHandle) {
-            btn.textContent = '📁 Synced: ' + syncRootHandle.name;
-            btn.style.background = '#1a3a1a';
-            btn.style.borderColor = '#4a8a4a';
-            btn.style.color = '#8f8';
-          } else {
-            btn.textContent = '📁 Sync Folder';
-            btn.style.background = '#1a2a1a';
-            btn.style.borderColor = '#3a6a3a';
-            btn.style.color = '#8fcf8f';
-          }
-        }
-=======
       let authToken = localStorage.getItem('itecify-auth-token') || '';
       let currentUser = null;
       let workspaces = [];
@@ -1069,6 +437,7 @@
       let suppressEditorChange = false;
       let htmlPreviewWindow = null;
       let errorLineDecorations = [];
+      let syncRootHandle = null;
       const TRACK_KEY = 'itecify-total-time-ms';
       let visitStartedAt = Date.now();
 
@@ -1395,7 +764,6 @@
         state.files.forEach((file) => {
           history[file.id] = { undo: [], redo: [] };
         });
->>>>>>> Stashed changes
       }
 
       function loadState() {
@@ -1410,14 +778,8 @@
         } catch (e) {
           console.warn('load state failed', e);
         }
-<<<<<<< Updated upstream
-        // Don't create default files - let users create their own
-        if (!Array.isArray(state.files)) {
-          state.files = [];
-=======
         if (!Array.isArray(state.files) || !state.files.length) {
           resetDefaultState();
->>>>>>> Stashed changes
         }
         if (!Array.isArray(state.agents) || !state.agents.length) {
           state.agents = [{id:'agent-code', name:'Code Assistant'}];
@@ -1473,10 +835,7 @@
             } else {
               // No files anywhere - let user create their own
               state.files = [];
-              state.activeId = state.files[0].id;
-              for (const file of state.files) {
-                await saveFileToServer(file);
-              }
+              state.activeId = null;
             }
             state.files.forEach(file => { 
               if (!history[file.id]) history[file.id] = {undo:[],redo:[]}; 
@@ -1559,6 +918,31 @@
         flushCurrentFile();
         saveState();
       }
+
+      function clearCredentials() {
+        authToken = '';
+        currentUser = null;
+        workspaces = [];
+        currentWorkspaceId = '';
+        localStorage.removeItem('itecify-auth-token');
+        localStorage.removeItem('itecify-current-user');
+        localStorage.removeItem('itecify-workspace-id');
+      }
+
+      function initializeYjsProvider() {}
+
+      function destroyYjsProvider() {}
+
+      function initializeSyncWebSocket() {}
+
+      function closeSyncWebSocket() {}
+
+      function loadCollaborators() {
+        const multiCursorList = document.getElementById('multiCursorList');
+        if (multiCursorList) multiCursorList.textContent = 'None';
+      }
+
+      function syncFileToDisk() {}
 
       function loadWorkspaceState() {
         resetDefaultState();
@@ -1742,68 +1126,7 @@
 
       function getActiveFile() { return state.files.find(f => f.id === state.activeId); }
 
-<<<<<<< Updated upstream
-      async function refreshWorkspaces() {
-        if (!authToken) return;
-        try {
-          const res = await fetch('/api/workspaces', { headers: { Authorization: 'Bearer ' + authToken } });
-          const data = await res.json();
-          if (res.ok) {
-            workspaceSelect.innerHTML = '';
-            data.workspaces.forEach(ws => {
-              const option = document.createElement('option');
-              option.value = ws.id;
-              option.textContent = ws.name + ' (' + ws.id + ')';
-              workspaceSelect.appendChild(option);
-            });
-            if (currentWorkspaceId && data.workspaces.some(w => w.id === currentWorkspaceId)) {
-              workspaceSelect.value = currentWorkspaceId;
-            } else if (data.workspaces.length) {
-              currentWorkspaceId = data.workspaces[0].id;
-              workspaceSelect.value = currentWorkspaceId;
-              localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
-            }
-            await loadCollaborators();
-            await loadFilesFromServer();
-            initializeSyncWebSocket();
-          } else {
-            console.warn('workspaces load failed', data);
-          }
-        } catch (err) {
-          console.warn('workspaces load failed', err);
-        }
-      }
-
-      function updateAuthUI() {
-        if (currentUser) {
-          loggedUserLabel.textContent = `Logged in as ${currentUser.username}`;
-        } else {
-          loggedUserLabel.textContent = 'No user';
-        }
-      }
-
-      async function setCredentials(token, user) {
-        authToken = token;
-        currentUser = user;
-        localStorage.setItem('itecify-auth-token', authToken);
-        updateAuthUI();
-        await refreshWorkspaces();
-      }
-
-      function clearCredentials() {
-        authToken = null;
-        currentUser = null;
-        localStorage.removeItem('itecify-auth-token');
-        updateAuthUI();
-        workspaceSelect.innerHTML = '';
-        currentWorkspaceId = null;
-        localStorage.removeItem('itecify-workspace-id');
-      }
-
-      function selectFile(fileId) {
-=======
       function selectFile(fileId, options = {}) {
->>>>>>> Stashed changes
         const file = state.files.find(f => f.id === fileId);
         if (!file) return;
         if (!options.skipFlush) {
@@ -1813,22 +1136,10 @@
           state.openTabs.push(file.id);
         }
         state.activeId = file.id;
-<<<<<<< Updated upstream
-        if (monacoEditor) {
-          const model = monacoEditor.getModel();
-          if (model) {
-            monaco.editor.setModelLanguage(model, getMonacoLanguage(file.language));
-          }
-          monacoEditor.setValue(file.code);
-        }
-        statusFile.textContent = file.name + ' [' + file.language + ']';
-        runOutput.textContent = 'Output will appear here.';
-=======
         setEditorValue(file.code, file.language);
         statusFile.textContent = file.name + ' [' + file.language + ']';
         // Clear stale output from the previous file
         setRunOutputMessage('Output will appear here.');
->>>>>>> Stashed changes
         renderFiles();
         updateCursor();
         saveState();
@@ -1840,25 +1151,12 @@
 
       function flushCurrentFile() {
         const file = getActiveFile();
-<<<<<<< Updated upstream
-        if (!file) return;
-        const currentCode = monacoEditor ? monacoEditor.getValue() : '';
-        if (file.code !== currentCode) {
-          history[file.id].undo.push(file.code);
-          history[file.id].redo = [];
-          file.code = currentCode;
-          // Save to server
-          if (authToken && currentWorkspaceId) {
-            saveFileToServer(file);
-          }
-=======
         if (!file || !monacoEditor) return;
         const editorValue = getEditorValue();
         if (file.code !== editorValue) {
           history[file.id].undo.push(file.code);
           history[file.id].redo = [];
           file.code = editorValue;
->>>>>>> Stashed changes
         }
       }
 
@@ -1915,14 +1213,10 @@
         state.files = state.files.filter(f => f.id !== id);
         state.openTabs = state.openTabs.filter((tabId) => tabId !== id);
         delete history[id];
-<<<<<<< Updated upstream
-        if (state.activeId === id) state.activeId = state.files.length > 0 ? state.files[0].id : null;
-=======
         if (state.activeId === id) state.activeId = state.files[0].id;
         if (state.activeId && !state.openTabs.includes(state.activeId)) {
           state.openTabs.push(state.activeId);
         }
->>>>>>> Stashed changes
         saveState();
         renderFiles();
         if (state.activeId) selectFile(state.activeId);
@@ -1938,19 +1232,8 @@
           monacoEditor.trigger('keyboard', 'undo', null);
           return;
         }
-<<<<<<< Updated upstream
-        const file = getActiveFile();
-        if (!file || !history[file.id] || !history[file.id].undo.length) return;
-        history[file.id].redo.push(file.code);
-        file.code = history[file.id].undo.pop();
-        isUndoRedo = true;
-        if (monacoEditor) monacoEditor.setValue(file.code);
-        isUndoRedo = false;
-        saveState();
-=======
         if (usingFallbackEditor) fallbackEditorEl.focus();
         document.execCommand('undo');
->>>>>>> Stashed changes
       }
 
       function redo() {
@@ -1958,46 +1241,12 @@
           monacoEditor.trigger('keyboard', 'redo', null);
           return;
         }
-<<<<<<< Updated upstream
-        const file = getActiveFile();
-        if (!file || !history[file.id] || !history[file.id].redo.length) return;
-        history[file.id].undo.push(file.code);
-        file.code = history[file.id].redo.pop();
-        isUndoRedo = true;
-        if (monacoEditor) monacoEditor.setValue(file.code);
-        isUndoRedo = false;
-        saveState();
-=======
         if (usingFallbackEditor) fallbackEditorEl.focus();
         document.execCommand('redo');
->>>>>>> Stashed changes
       }
 
       function updateCursor() {
         if (monacoEditor) {
-<<<<<<< Updated upstream
-          const pos = monacoEditor.getPosition();
-          if (pos) {
-            cursorPos.textContent = 'Ln ' + pos.lineNumber + ', Col ' + pos.column;
-            if (collaborators.length > 0) {
-              collaborators[0].line = pos.lineNumber;
-              collaborators[0].col = pos.column;
-              renderCollaboratorCursors();
-            }
-          }
-          return;
-        }
-        const pos = codeEditorContainer.selectionStart;
-        const lines = codeEditorContainer.value.slice(0, pos).split('\n');
-        const line = lines.length;
-        const col = lines[lines.length - 1].length + 1;
-        cursorPos.textContent = 'Ln ' + line + ', Col ' + col;
-        if (collaborators.length > 0) {
-          collaborators[0].line = line;
-          collaborators[0].col = col;
-          renderCollaboratorCursors();
-        }
-=======
           const position = monacoEditor.getPosition();
           cursorPos.textContent = position
             ? 'Ln ' + position.lineNumber + ', Col ' + position.column
@@ -2070,7 +1319,6 @@
         htmlPreviewWindow.document.title = fileName || 'HTML Preview';
         htmlPreviewWindow.focus();
         return true;
->>>>>>> Stashed changes
       }
 
 
@@ -2125,87 +1373,38 @@
           return msg;
         }
 
-<<<<<<< Updated upstream
-        if (['js', 'nodejs', 'python', 'rust', 'c', 'cpp', 'csharp', 'php'].includes(file.language)) {
-          if (!authToken || !currentWorkspaceId) {
-            const msg = 'Login and select workspace to run sandbox code.';
-            if (setOutput) runOutput.textContent = msg;
-=======
         try {
           const res = await fetch('/api/sandbox/run', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ language:file.language, code:file.code, input: inputText || '' })
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken ? { Authorization: 'Bearer ' + authToken } : {})
+            },
+            body: JSON.stringify({
+              language: file.language === 'js' ? 'nodejs' : file.language,
+              code: file.code,
+              input: inputText || '',
+              workspaceId: currentWorkspaceId || undefined
+            })
           });
 
           if (!res.ok) {
             const text = await res.text();
             const msg = 'Run failed: ' + res.status + '\n' + text;
             if (setOutput) setRunOutputMessage(msg, true);
->>>>>>> Stashed changes
             return msg;
           }
-          try {
-            const res = await fetch('/api/sandbox/run', {
-              method:'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + authToken
-              },
-              body: JSON.stringify({ language: file.language === 'js' ? 'nodejs' : file.language, code: file.code, workspaceId: currentWorkspaceId })
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              const msg = 'Run failed: ' + (data.error || res.statusText || 'Unknown');
-              if (setOutput) runOutput.textContent = msg;
-              return msg;
-            }
-            const msg = 'exit=' + (data.code ?? '?') + '\nstdout:\n' + (data.stdout || '') + '\nstderr:\n' + (data.stderr || '');
-            if (setOutput) runOutput.textContent = msg;
-            return msg;
-          } catch (err) {
-            const msg = 'Run error: ' + err.message;
-            if (setOutput) runOutput.textContent = msg;
-            return msg;
-          }
-        }
-
-<<<<<<< Updated upstream
-        if (file.language === 'html') {
-          if (setOutput) {
-            runOutput.innerHTML = '';
-            const iframe = document.createElement('iframe');
-            iframe.style.width = '100%';
-            iframe.style.height = '300px';
-            iframe.style.border = '1px solid #444';
-            iframe.srcdoc = file.code;
-            runOutput.appendChild(iframe); 
-          }
-          return '[HTML rendered in iframe]';
-        }
-
-        if (file.language === 'css') {
-          let styleEl = document.getElementById('itecify-runtime-style');
-          if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = 'itecify-runtime-style';
-            document.head.appendChild(styleEl);
-          }
-          styleEl.textContent = file.code;
-          const msg = 'CSS applied to the UI.';
-          if (setOutput) runOutput.textContent = msg;
-=======
           const data = await res.json();
-          const failed = !data.ok || data.code !== 0;
+          const failed = data.ok === false || data.code !== 0;
           if (failed) {
             showEditorDiagnostics(data.stderr || data.stdout || '');
           }
-          const msg = 'exit=' + data.code + '\nstdout:\n' + (data.stdout||'') + '\nstderr:\n' + (data.stderr||'');
+          const msg = 'exit=' + (data.code ?? '?') + '\nstdout:\n' + (data.stdout || '') + '\nstderr:\n' + (data.stderr || '');
           if (setOutput) setRunOutputMessage(msg, failed);
           return msg;
         } catch (err) {
           const msg = 'Run error: ' + err.message;
           if (setOutput) setRunOutputMessage(msg, true);
->>>>>>> Stashed changes
           return msg;
         }
       }
@@ -2228,65 +1427,6 @@
       logoutBtn.onclick = () => {
         clearCredentials();
         window.location.href = '/login.html';
-      };
-
-      const menuBtn = document.getElementById('menuBtn');
-      const menuDropdown = document.getElementById('menuDropdown');
-      menuBtn.onclick = (e) => {
-        e.stopPropagation();
-        menuDropdown.classList.toggle('show');
-      };
-      document.addEventListener('click', () => {
-        menuDropdown.classList.remove('show');
-      });
-      menuDropdown.onclick = (e) => {
-        e.stopPropagation();
-      };
-
-      createWorkspaceBtn.onclick = async () => {
-        menuDropdown.classList.remove('show');
-        const name = window.prompt('Workspace name:', 'My Workspace');
-        if (!name) return;
-        if (!authToken) { alert('Log in first'); return; }
-        const res = await fetch('/api/workspaces', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
-          body: JSON.stringify({ name })
-        });
-        const data = await res.json();
-        if (!res.ok) { alert('Create workspace failed: ' + (data.error || res.statusText)); return; }
-        currentWorkspaceId = data.workspace.id;
-        localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
-        await refreshWorkspaces();
-        alert('Workspace created: ' + data.workspace.name);
-      };
-
-      addMemberBtn.onclick = async () => {
-        menuDropdown.classList.remove('show');
-        if (!currentWorkspaceId) { alert('Select or create a workspace first'); return; }
-        const identifier = window.prompt('User username or email to add to workspace:');
-        if (!identifier) return;
-        if (!authToken) { alert('Log in first'); return; }
-        const res = await fetch(`/api/workspaces/${currentWorkspaceId}/add-member`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
-          body: JSON.stringify({ identifier })
-        });
-        const data = await res.json();
-        if (!res.ok) { alert('Add member failed: ' + (data.error || res.statusText)); return; }
-        await refreshWorkspaces();
-        alert('Member added successfully.');
-      };
-
-      workspaceSelect.onchange = () => {
-        destroyYjsProvider();
-        closeSyncWebSocket();
-        currentWorkspaceId = workspaceSelect.value;
-        localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
-        loadCollaborators();
-        loadFilesFromServer();
-        initializeYjsProvider();
-        initializeSyncWebSocket();
       };
 
       const sendAIPrompt = async (promptText, suggestionsEl) => {
@@ -2331,33 +1471,8 @@ If the user asks you to modify the code, respond with ONLY the complete modified
           }
           const data = await res.json();
           const text = data.response || '[No response]';
-<<<<<<< Updated upstream
-          
-          // Try to extract and apply code block if present
-          const codeBlockRegex = /```([a-zA-Z0-9]*)?\s*([\s\S]*?)```/;
-          const match = text.match(codeBlockRegex);
-          
-          if (match && match[2]) {
-            const suggestedCode = match[2].trim();
-            // Use a data-* attribute instead of btoa to avoid UTF-8 encoding issues
-            const randomId = 'suggestion-' + Date.now();
-            window['_aiSuggestion_' + randomId] = suggestedCode;
-            // Show the suggestion with an apply button
-            suggestionsEl.innerHTML = `<div style="background:#1a3a1a;padding:10px;border-radius:4px;margin-bottom:10px;">
-              <div style="color:#8f8;margin-bottom:8px;font-weight:bold;">✓ Code modification suggested:</div>
-              <pre style="background:#0a0a0a;padding:8px;border-radius:3px;overflow-x:auto;font-size:11px;color:#aaa;margin:8px 0;">${suggestedCode.slice(0, 200).replace(/</g, '&lt;').replace(/>/g, '&gt;')}${suggestedCode.length > 200 ? '...' : ''}</pre>
-              <button style="background:#3a7a3a;border:1px solid #5a9a5a;color:#8f8;padding:6px 12px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="applyAISuggestion('${randomId}');">✓ Apply Changes</button>
-              <button style="background:#4a4a4a;border:1px solid #6a6a6a;color:#aaa;padding:6px 12px;border-radius:3px;cursor:pointer;font-size:12px;margin-left:8px;" onclick="rejectAISuggestion();">✗ Reject</button>
-            </div>`;
-            runOutput.textContent = 'AI suggested code changes. Click "Apply Changes" to use them.';
-          } else {
-            suggestionsEl.textContent = text;
-            runOutput.textContent = 'AI response received.';
-          }
-=======
           suggestionsEl.textContent = text;
           setRunOutputMessage('AI response received.');
->>>>>>> Stashed changes
         } catch (err) {
           suggestionsEl.textContent = 'AI error: ' + (err.message || err);
           setRunOutputMessage('AI error: ' + (err.message || err), true);
@@ -2597,20 +1712,6 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       document.getElementById('saveFileBtn').onclick = () => {
         flushCurrentFile();
         saveState();
-<<<<<<< Updated upstream
-        const file = getActiveFile();
-        if (file && syncRootHandle) {
-          syncFileToDisk(file);
-          runOutput.textContent = '✓ Saved & synced: ' + file.name;
-        } else {
-          runOutput.textContent = '✓ Saved (use "Sync Folder" for auto-sync)';
-        }
-      };
-
-      document.getElementById('downloadFileBtn').onclick = saveAsWithDialog;
-
-      document.getElementById('syncFolderBtn').onclick = selectSyncFolder;
-=======
         setRunOutputMessage('Saved');
       };
 
@@ -2629,7 +1730,6 @@ If the user asks you to modify the code, respond with ONLY the complete modified
         // Revoke the object URL to free memory
         setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
       };
->>>>>>> Stashed changes
 
       document.getElementById('runActiveBtn').onclick = runActive;
       document.getElementById('undoBtn').onclick = undo;
@@ -2648,34 +1748,6 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       });
 
       // Initialize app
-<<<<<<< Updated upstream
-      // Check for auth token, redirect to login if missing
-      if (!authToken) {
-        window.location.href = '/login.html';
-      } else {
-        try {
-          const savedUser = localStorage.getItem('itecify-current-user');
-          if (savedUser) {
-            currentUser = JSON.parse(savedUser);
-          }
-        } catch (err) {
-          console.warn('parse user failed', err);
-        }
-      }
-
-      updateAuthUI();
-      
-      initMonaco().then(() => {
-        loadState();
-        renderFiles();
-        renderAgents();
-        if (authToken) {
-          refreshWorkspaces();
-        } else if (state.activeId) {
-          selectFile(state.activeId);
-        }
-      });
-=======
       (async () => {
         try {
           await verifySession();
@@ -2692,7 +1764,6 @@ If the user asks you to modify the code, respond with ONLY the complete modified
           setRunOutputMessage('Editor failed to load: ' + (err.message || err), true);
         }
       })();
->>>>>>> Stashed changes
     </script>
   </body>
 </html>

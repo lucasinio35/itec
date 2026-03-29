@@ -3,169 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<<<<<<< Updated upstream
-  <title>iTECify - Login</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-      background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      color: #eee;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 400px;
-      padding: 20px;
-    }
-
-    .logo-box {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .logo-box h1 {
-      font-size: 32px;
-      color: #5f9cff;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
-    }
-
-    .logo-box p {
-      font-size: 12px;
-      color: #a0a7b0;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-    }
-
-    .form-box {
-      background: #252526;
-      border: 1px solid #3c3d46;
-      border-radius: 8px;
-      padding: 30px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      color: #a0a7b0;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-      letter-spacing: 0.5px;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 10px 12px;
-      background: #1f1f24;
-      border: 1px solid #3c3d46;
-      border-radius: 4px;
-      color: #eee;
-      font-size: 14px;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #5f9cff;
-      box-shadow: 0 0 0 2px rgba(95, 156, 255, 0.1);
-    }
-
-    .form-group input::placeholder {
-      color: #666;
-    }
-
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 24px;
-    }
-
-    button {
-      flex: 1;
-      padding: 10px 16px;
-      background: #2a2a2f;
-      border: 1px solid #444;
-      color: #eee;
-      border-radius: 4px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    button:hover {
-      background: #4a4a5f;
-      border-color: #5f9cff;
-    }
-
-    button.primary {
-      background: #5f9cff;
-      border-color: #5f9cff;
-      color: #fff;
-    }
-
-    button.primary:hover {
-      background: #7fb3ff;
-    }
-
-    .toggle-text {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #a0a7b0;
-    }
-
-    .toggle-text button {
-      background: none;
-      border: none;
-      color: #5f9cff;
-      padding: 0;
-      cursor: pointer;
-      font-size: 12px;
-      text-decoration: underline;
-      display: inline;
-      margin-left: 4px;
-    }
-
-    .toggle-text button:hover {
-      color: #7fb3ff;
-      background: none;
-    }
-
-    .status {
-      margin-top: 16px;
-      padding: 10px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      text-align: center;
-      display: none;
-    }
-
-    .status.success {
-      background: rgba(47, 167, 47, 0.2);
-      border: 1px solid #2fa72f;
-      color: #8fcf8f;
-      display: block;
-    }
-
-    .status.error {
-      background: rgba(244, 67, 54, 0.2);
-      border: 1px solid #f44;
-      color: #ff8888;
-      display: block;
-=======
   <title>iTECify Engine</title>
   <style>
     :root {
@@ -554,63 +391,10 @@
         flex: 1;
         text-align: center;
       }
->>>>>>> Stashed changes
     }
   </style>
 </head>
 <body>
-<<<<<<< Updated upstream
-  <div class="container">
-    <div class="logo-box">
-      <h1>iTECify</h1>
-      <p>Collaborative Code Workspace</p>
-    </div>
-
-    <div class="form-box">
-      <div id="loginForm">
-        <div class="form-group">
-          <label>Username or Email</label>
-          <input type="text" id="loginUsername" placeholder="your-username" />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="loginPassword" placeholder="••••••••" />
-        </div>
-        <div class="button-group">
-          <button class="primary" id="loginBtn">Login</button>
-          <button id="toggleRegisterBtn">Register</button>
-        </div>
-        <div class="status" id="loginStatus"></div>
-        <div class="toggle-text">
-          Don't have an account? <button id="switchToRegister">Sign up here</button>
-        </div>
-      </div>
-
-      <div id="registerForm" style="display: none;">
-        <div class="form-group">
-          <label>Username</label>
-          <input type="text" id="registerUsername" placeholder="choose-username" />
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="registerEmail" placeholder="you@example.com" />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="registerPassword" placeholder="••••••••" />
-        </div>
-        <div class="form-group">
-          <label>Confirm Password</label>
-          <input type="password" id="registerPasswordConfirm" placeholder="••••••••" />
-        </div>
-        <div class="button-group">
-          <button class="primary" id="registerBtn">Register</button>
-          <button id="toggleLoginBtn">Back to Login</button>
-        </div>
-        <div class="status" id="registerStatus"></div>
-        <div class="toggle-text">
-          Already have an account? <button id="switchToLogin">Login here</button>
-=======
   <div class="page">
     <div class="grid-glow"></div>
     <div id="mainContent" class="content">
@@ -730,65 +514,12 @@
           </div>
           <div id="registerStatus" class="status"></div>
           <div class="switch-line">Already have an account? <a href="#" id="showLoginLink">Login</a></div>
->>>>>>> Stashed changes
         </div>
       </div>
     </div>
   </div>
 
   <script>
-<<<<<<< Updated upstream
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const loginBtn = document.getElementById('loginBtn');
-    const registerBtn = document.getElementById('registerBtn');
-    const switchToRegister = document.getElementById('switchToRegister');
-    const switchToLogin = document.getElementById('switchToLogin');
-    const toggleRegisterBtn = document.getElementById('toggleRegisterBtn');
-    const toggleLoginBtn = document.getElementById('toggleLoginBtn');
-
-    const loginUsername = document.getElementById('loginUsername');
-    const loginPassword = document.getElementById('loginPassword');
-    const registerUsername = document.getElementById('registerUsername');
-    const registerEmail = document.getElementById('registerEmail');
-    const registerPassword = document.getElementById('registerPassword');
-    const registerPasswordConfirm = document.getElementById('registerPasswordConfirm');
-    const loginStatus = document.getElementById('loginStatus');
-    const registerStatus = document.getElementById('registerStatus');
-
-    function showLoginForm() {
-      loginForm.style.display = 'block';
-      registerForm.style.display = 'none';
-      loginStatus.textContent = '';
-      loginStatus.className = 'status';
-    }
-
-    function showRegisterForm() {
-      loginForm.style.display = 'none';
-      registerForm.style.display = 'block';
-      registerStatus.textContent = '';
-      registerStatus.className = 'status';
-    }
-
-    switchToRegister.onclick = showRegisterForm;
-    switchToLogin.onclick = showLoginForm;
-    toggleRegisterBtn.onclick = showRegisterForm;
-    toggleLoginBtn.onclick = showLoginForm;
-
-    loginBtn.onclick = async () => {
-      const username = loginUsername.value.trim();
-      const password = loginPassword.value;
-
-      if (!username || !password) {
-        loginStatus.textContent = 'Please enter both username and password';
-        loginStatus.className = 'status error';
-        return;
-      }
-
-      loginBtn.disabled = true;
-      loginBtn.textContent = 'Logging in...';
-
-=======
     const mainContent = document.getElementById('mainContent');
     const authModal = document.getElementById('authModal');
     const authTitle = document.getElementById('authTitle');
@@ -857,6 +588,18 @@
       localStorage.setItem('itecify-current-user', JSON.stringify(data.user));
     }
 
+    async function readResponsePayload(res, emptyFallback) {
+      const text = await res.text();
+      if (!text.trim()) {
+        return { error: emptyFallback || ('Request failed with status ' + res.status + '.') };
+      }
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        return { error: text.slice(0, 300) || ('Invalid server response: ' + err.message) };
+      }
+    }
+
     function requireAuthForEditor(mode) {
       authRequiredForEditor = true;
       if (mode === 'login') {
@@ -923,73 +666,19 @@
         setStatus(loginStatus, 'error', 'Please enter both username and password.');
         return;
       }
->>>>>>> Stashed changes
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-<<<<<<< Updated upstream
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          loginStatus.textContent = data.error || 'Login failed';
-          loginStatus.className = 'status error';
-          loginBtn.disabled = false;
-          loginBtn.textContent = 'Login';
-          return;
-        }
-
-        loginStatus.textContent = 'Login successful! Redirecting...';
-        loginStatus.className = 'status success';
-
-        localStorage.setItem('itecify-auth-token', data.token);
-        localStorage.setItem('itecify-current-user', JSON.stringify(data.user));
-
-        setTimeout(() => {
-          window.location.href = '/app.html';
-        }, 500);
-      } catch (err) {
-        loginStatus.textContent = 'Connection error: ' + err.message;
-        loginStatus.className = 'status error';
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Login';
-      }
-    };
-
-    registerBtn.onclick = async () => {
-      const username = registerUsername.value.trim();
-      const email = registerEmail.value.trim();
-      const password = registerPassword.value;
-      const passwordConfirm = registerPasswordConfirm.value;
-
-      if (!username || !email || !password || !passwordConfirm) {
-        registerStatus.textContent = 'Please fill in all fields';
-        registerStatus.className = 'status error';
-        return;
-      }
-
-      if (password !== passwordConfirm) {
-        registerStatus.textContent = 'Passwords do not match';
-        registerStatus.className = 'status error';
-        return;
-      }
-
-      if (password.length < 4) {
-        registerStatus.textContent = 'Password must be at least 4 characters';
-        registerStatus.className = 'status error';
-        return;
-      }
-
-      registerBtn.disabled = true;
-      registerBtn.textContent = 'Registering...';
-
-=======
-        const data = await res.json();
+        const data = await readResponsePayload(res, res.status === 401 ? 'Invalid username/email or password.' : 'Login failed.');
         if (!res.ok) {
           setStatus(loginStatus, 'error', data.error || 'Login failed.');
+          return;
+        }
+        if (!data.token || !data.user) {
+          setStatus(loginStatus, 'error', data.error || 'Login response was incomplete.');
           return;
         }
         persistAuth(data);
@@ -1013,64 +702,19 @@
         setStatus(registerStatus, 'error', 'Passwords do not match.');
         return;
       }
->>>>>>> Stashed changes
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, password })
         });
-<<<<<<< Updated upstream
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          registerStatus.textContent = data.error || 'Registration failed';
-          registerStatus.className = 'status error';
-          registerBtn.disabled = false;
-          registerBtn.textContent = 'Register';
-          return;
-        }
-
-        registerStatus.textContent = 'Registration successful! Redirecting...';
-        registerStatus.className = 'status success';
-
-        localStorage.setItem('itecify-auth-token', data.token);
-        localStorage.setItem('itecify-current-user', JSON.stringify(data.user));
-
-        setTimeout(() => {
-          window.location.href = '/app.html';
-        }, 500);
-      } catch (err) {
-        registerStatus.textContent = 'Connection error: ' + err.message;
-        registerStatus.className = 'status error';
-        registerBtn.disabled = false;
-        registerBtn.textContent = 'Register';
-      }
-    };
-
-    // Check if already logged in
-    const savedToken = localStorage.getItem('itecify-auth-token');
-    if (savedToken) {
-      window.location.href = '/app.html';
-    }
-
-    // Allow Enter key submission
-    [loginPassword, registerPasswordConfirm].forEach(input => {
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          if (loginForm.style.display !== 'none') {
-            loginBtn.click();
-          } else {
-            registerBtn.click();
-          }
-        }
-      });
-    });
-=======
-        const data = await res.json();
+        const data = await readResponsePayload(res, 'Registration failed.');
         if (!res.ok) {
           setStatus(registerStatus, 'error', data.error || 'Registration failed.');
+          return;
+        }
+        if (!data.token || !data.user) {
+          setStatus(registerStatus, 'error', data.error || 'Registration response was incomplete.');
           return;
         }
         persistAuth(data);
@@ -1082,7 +726,6 @@
     };
 
     updateHomepageActions();
->>>>>>> Stashed changes
   </script>
 </body>
 </html>

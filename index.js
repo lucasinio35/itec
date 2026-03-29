@@ -1,10 +1,9 @@
-const express = require('express');
+﻿const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { spawn } = require('child_process');
 const https = require('https');
-<<<<<<< Updated upstream
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
@@ -13,15 +12,11 @@ const encoding = require('lib0/encoding');
 const decoding = require('lib0/decoding');
 const syncProtocol = require('y-protocols/sync');
 const awarenessProtocol = require('y-protocols/awareness');
-=======
-const crypto = require('crypto');
->>>>>>> Stashed changes
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3002;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const JWT_SECRET = process.env.JWT_SECRET || 'strong-jwt-secret';
-<<<<<<< Updated upstream
 const JWT_EXPIRES_IN = '2h';
 
 const users = [];
@@ -44,12 +39,12 @@ function loadDatabase() {
       workspaces.push(...(parsed.workspaces || []));
       files.length = 0;
       files.push(...(parsed.files || []));
-      console.log(`✓ Database loaded: ${users.length} users, ${workspaces.length} workspaces, ${files.length} files`);
+      console.log(`âœ“ Database loaded: ${users.length} users, ${workspaces.length} workspaces, ${files.length} files`);
     } else {
-      console.log('ℹ No database file found, starting fresh');
+      console.log('â„¹ No database file found, starting fresh');
     }
   } catch (err) {
-    console.warn('⚠ Error loading database:', err.message);
+    console.warn('âš  Error loading database:', err.message);
   }
 }
 
@@ -58,12 +53,16 @@ function saveDatabase() {
     const data = JSON.stringify({ users, workspaces, files }, null, 2);
     fs.writeFileSync(DATABASE_FILE, data, 'utf8');
   } catch (err) {
-    console.error('✗ Error saving database:', err.message);
+    console.error('âœ— Error saving database:', err.message);
   }
 }
 
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function normalizeCredential(value) {
+  return String(value || '').trim().toLowerCase();
 }
 
 function generateToken(user) {
@@ -97,11 +96,6 @@ function canAccessWorkspace(userId, workspaceId) {
   if (!workspace) return false;
   return workspace.members.includes(userId);
 }
-=======
-const DATABASE_FILE = path.join(__dirname, 'database.json');
-const users = [];
-const workspaces = [];
->>>>>>> Stashed changes
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static('public'));
@@ -133,6 +127,14 @@ function hashPassword(password) {
 
 function sanitizeUser(user) {
   return { id: user.id, username: user.username, email: user.email };
+}
+
+function findUserByLogin(identifier) {
+  const normalized = normalizeCredential(identifier);
+  return users.find((candidate) =>
+    normalizeCredential(candidate.username) === normalized ||
+    normalizeCredential(candidate.email) === normalized
+  );
 }
 
 function encodeBase64Url(value) {
@@ -202,11 +204,13 @@ app.get('/api/auth/me', authenticateJWT, (req, res) => {
 });
 
 app.post('/api/auth/register', (req, res) => {
-  const { username, email, password } = req.body || {};
+  const username = String(req.body?.username || '').trim();
+  const email = String(req.body?.email || '').trim();
+  const password = String(req.body?.password || '');
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'username, email and password are required' });
   }
-  if (users.some((user) => user.username === username || user.email === email)) {
+  if (findUserByLogin(username) || users.some((user) => normalizeCredential(user.email) === normalizeCredential(email))) {
     return res.status(409).json({ error: 'User already exists' });
   }
 
@@ -222,12 +226,13 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body || {};
+  const username = String(req.body?.username || '').trim();
+  const password = String(req.body?.password || '');
   if (!username || !password) {
     return res.status(400).json({ error: 'username and password are required' });
   }
 
-  const user = users.find((candidate) => candidate.username === username || candidate.email === username);
+  const user = findUserByLogin(username);
   if (!user || user.password !== hashPassword(password)) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
@@ -297,7 +302,7 @@ app.post('/api/ai', async (req, res) => {
   const apiKey = OPENAI_API_KEY || req.headers['x-openai-key'] || '';
 
   if (!apiKey) {
-    return res.json({ response: 'Error: No Groq API key configured.\n\nOptions:\n1. Set env var: set OPENAI_API_KEY=gsk_...\n2. In the app: open "Code Assistant" → click "🔑 Set Groq API Key"' });
+    return res.json({ response: 'Error: No Groq API key configured.\n\nOptions:\n1. Set env var: set OPENAI_API_KEY=gsk_...\n2. In the app: open "Code Assistant" â†’ click "ðŸ”‘ Set Groq API Key"' });
   }
 
   const payload = JSON.stringify({
@@ -349,11 +354,13 @@ app.post('/api/ai', async (req, res) => {
 });
 
 app.post('/api/auth/register', (req, res) => {
-  const { username, email, password } = req.body || {};
+  const username = String(req.body?.username || '').trim();
+  const email = String(req.body?.email || '').trim();
+  const password = String(req.body?.password || '');
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'username, email and password are required' });
   }
-  if (users.some((u) => u.username === username || u.email === email)) {
+  if (findUserByLogin(username) || users.some((u) => normalizeCredential(u.email) === normalizeCredential(email))) {
     return res.status(409).json({ error: 'User already exists' });
   }
   const user = {
@@ -369,11 +376,12 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body || {};
+  const username = String(req.body?.username || '').trim();
+  const password = String(req.body?.password || '');
   if (!username || !password) {
     return res.status(400).json({ error: 'username and password are required' });
   }
-  const user = users.find((u) => u.username === username || u.email === username);
+  const user = findUserByLogin(username);
   if (!user || user.password !== hashPassword(password)) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
@@ -752,18 +760,12 @@ function sanitizeInput(code) {
   return code;
 }
 
-<<<<<<< Updated upstream
 app.post('/api/sandbox/run', authenticateJWT, async (req, res) => {
   const { language, code, workspaceId } = req.body || {};
   if (!language || !code || !workspaceId) return res.status(400).json({ error: 'language, code and workspaceId are required' });
   if (!canAccessWorkspace(req.user.id, workspaceId)) {
     return res.status(403).json({ error: 'User not part of workspace' });
   }
-=======
-app.post('/api/sandbox/run', async (req, res) => {
-  const { language, code, input } = req.body || {};
-  if (!language || !code) return res.status(400).json({ error: 'language and code required' });
->>>>>>> Stashed changes
   const clean = sanitizeInput(code);
   const cleanInput = sanitizeInput(typeof input === 'string' ? input : '');
   const result = await runCommand(language, clean, cleanInput);
@@ -804,7 +806,6 @@ app.post('/api/sandbox/run/chain', authenticateJWT, async (req, res) => {
   res.end();
 });
 
-<<<<<<< Updated upstream
 // Create HTTP server and attach WebSocket server
 const server = http.createServer(app);
 
@@ -901,7 +902,7 @@ yjsWss.on('connection', (ws, req) => {
   // Use the workspace/file IDs stored during upgrade
   const roomName = `${req.wsWorkspaceId}/${req.wsFileId}`;
   
-  console.log(`✓ Yjs client connected: ${roomName}`);
+  console.log(`âœ“ Yjs client connected: ${roomName}`);
   
   // Get or create Yjs document for this room
   if (!yjs_docs.has(roomName)) {
@@ -1030,7 +1031,7 @@ yjsWss.on('connection', (ws, req) => {
   
   ws.on('close', () => {
     room.clients.delete(ws);
-    console.log(`✓ Yjs client disconnected: ${roomName} (${room.clients.size} remaining)`);
+    console.log(`âœ“ Yjs client disconnected: ${roomName} (${room.clients.size} remaining)`);
     
     // Remove from awareness
     awarenessProtocol.removeAwarenessStates(room.awareness, [room.doc.clientID], null);
@@ -1061,7 +1062,7 @@ syncWss.on('connection', (ws, req) => {
   }
   yjs_rooms.get(roomId).add(ws);
   
-  console.log(`✓ Sync client connected: ${workspaceId} (${yjs_rooms.get(roomId).size} clients)`);
+  console.log(`âœ“ Sync client connected: ${workspaceId} (${yjs_rooms.get(roomId).size} clients)`);
   
   ws.on('close', () => {
     const room = yjs_rooms.get(roomId);
@@ -1100,13 +1101,9 @@ server.listen(PORT, '0.0.0.0', () => {
     .flat()
     .filter(addr => addr.family === 'IPv4' && !addr.internal)
     .map(addr => addr.address)[0] || 'localhost';
-  console.log(`✓ itecify sandbox listening on http://localhost:${PORT}`);
-  console.log(`✓ WebSocket available on ws://localhost:${PORT}/yjs/{workspaceId}/{fileId}`);
+  console.log(`âœ“ itecify sandbox listening on http://localhost:${PORT}`);
+  console.log(`âœ“ WebSocket available on ws://localhost:${PORT}/yjs/{workspaceId}/{fileId}`);
   console.log(`  From another PC: http://${localIP}:${PORT}`);
   console.log(`  WebSocket from other PC: ws://${localIP}:${PORT}/yjs/{workspaceId}/{fileId}`);
-=======
-app.listen(PORT, () => {
-  loadDatabase();
-  console.log(`itecify sandbox listening http://localhost:${PORT}`);
->>>>>>> Stashed changes
 });
+
