@@ -580,6 +580,11 @@
         transform: translateX(4px)
       }
     }
+
+    .ai-suggestion-line {
+      background-color: rgba(100, 200, 100, 0.15) !important;
+      border-left: 4px solid rgb(100, 200, 100) !important;
+    }
   </style>
   <link rel="stylesheet" data-name="vs/editor/editor.main"
     href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
@@ -1728,6 +1733,8 @@
       window.location.href = '/login.html';
     };
 
+    let pendingAISuggestion = null; // Track pending AI suggestion
+
     const sendAIPrompt = async (promptText, suggestionsEl) => {
       const prompt = promptText.trim();
       if (!prompt) {
@@ -1770,53 +1777,128 @@ If the user asks you to modify the code, respond with ONLY the complete modified
         }
         const data = await res.json();
         const text = data.response || '[No response]';
-        suggestionsEl.textContent = text;
-        setRunOutputMessage('AI response received.');
+        
+        // Try to extract code block
+        const codeBlockRegex = /```([a-zA-Z0-9]*)?\s*([\s\S]*?)```/;
+        const match = text.match(codeBlockRegex);
+        
+        if (match && match[2]) {
+          const suggestedCode = match[2].trim();
+          const suggestionId = 'suggestion-' + Date.now();
+          
+          // Store the suggestion
+          pendingAISuggestion = {
+            id: suggestionId,
+            code: suggestedCode,
+            fileId: file.id,
+            original: file.code
+          };
+          
+          // Show visual diff in editor
+          showAISuggestionInEditor(suggestedCode, file.code, file.language);
+          
+          // Show in panel
+          suggestionsEl.innerHTML = `<div style="background:rgba(100,200,100,0.1);padding:10px;border-radius:4px;margin-bottom:10px;border:1px solid rgba(100,200,100,0.3);">
+            <div style="color:#8f8;margin-bottom:8px;font-weight:bold;">✓ Code modification suggested</div>
+            <div style="color:#aaa;font-size:12px;margin-bottom:10px;">Review the changes in the editor (highlighted in green)</div>
+            <div style="display:flex;gap:8px;">
+              <button style="background:#4a8a4a;border:1px solid #6aaa6a;color:#fff;padding:6px 12px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="acceptAISuggestion();">✓ Accept</button>
+              <button style="background:#4a4a4a;border:1px solid #6a6a6a;color:#aaa;padding:6px 12px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="rejectAISuggestion();">✗ Reject</button>
+            </div>
+          </div>`;
+          setRunOutputMessage('AI suggested changes. Review in editor and click Accept or Reject.');
+        } else {
+          suggestionsEl.textContent = text;
+          setRunOutputMessage('AI response received.');
+        }
       } catch (err) {
         suggestionsEl.textContent = 'AI error: ' + (err.message || err);
         setRunOutputMessage('AI error: ' + (err.message || err), true);
       }
     };
-
-    // Global function to apply AI suggestions
-    window.applyAISuggestion = (suggestionId) => {
-      try {
-        const suggestedCode = window['_aiSuggestion_' + suggestionId];
-        if (!suggestedCode) {
-          console.warn('Suggestion not found:', suggestionId);
-          return;
+    
+    const showAISuggestionInEditor = (suggestedCode, originalCode, language) => {
+      if (!monacoEditor) return;
+      
+      // Clear previous decorations
+      if (monacoEditor._aiDecorations) {
+        monacoEditor.deltaDecorations(monacoEditor._aiDecorations, []);
+      }
+      
+      // Create decorations for changed lines
+      const originalLines = originalCode.split('\n');
+      const suggestedLines = suggestedCode.split('\n');
+      const decorations = [];
+      
+      // Simple line-by-line comparison
+      for (let i = 0; i < Math.max(originalLines.length, suggestedLines.length); i++) {
+        if (originalLines[i] !== suggestedLines[i]) {
+          decorations.push({
+            range: new monaco.Range(i + 1, 1, i + 1, 1),
+            options: {
+              isWholeLine: true,
+              className: 'ai-suggestion-line',
+              backgroundColor: 'rgba(100, 200, 100, 0.15)',
+              border: '2px solid rgba(100, 200, 100, 0.4)',
+              borderLeft: '4px solid rgb(100, 200, 100)',
+            }
+          });
         }
-        const file = getActiveFile();
-        if (!file) return;
-
-        // Update file code and editor
-        history[file.id].undo.push(file.code);
-        history[file.id].redo = [];
-        file.code = suggestedCode;
-
-        if (monacoEditor) {
-          monacoEditor.setValue(suggestedCode);
-        }
-
-        saveState();
-        broadcastFileUpdate(file);
-
-        // Save to server
-        if (authToken && currentWorkspaceId) {
-          saveFileToServer(file);
-        }
-
-        // Clean up
-        delete window['_aiSuggestion_' + suggestionId];
-
-        runOutput.textContent = '✓ AI changes applied to ' + file.name;
-        agentPanelSuggestions.textContent = 'Changes applied! Type a new prompt to continue.';
-      } catch (err) {
-        console.warn('Failed to apply AI suggestion:', err);
+      }
+      
+      monacoEditor._aiDecorations = monacoEditor.deltaDecorations(
+        monacoEditor._aiDecorations || [],
+        decorations
+      );
+    };
+    
+    const clearAISuggestionDecorations = () => {
+      if (monacoEditor && monacoEditor._aiDecorations) {
+        monacoEditor.deltaDecorations(monacoEditor._aiDecorations, []);
+        monacoEditor._aiDecorations = [];
       }
     };
 
+    // Global function to accept AI suggestions
+    window.acceptAISuggestion = () => {
+      if (!pendingAISuggestion) {
+        console.warn('No pending suggestion');
+        return;
+      }
+      
+      const file = getActiveFile();
+      if (!file || file.id !== pendingAISuggestion.fileId) {
+        console.warn('File mismatch');
+        return;
+      }
+      
+      // Update file code and editor
+      history[file.id].undo.push(file.code);
+      history[file.id].redo = [];
+      file.code = pendingAISuggestion.code;
+      
+      if (monacoEditor) {
+        monacoEditor.setValue(pendingAISuggestion.code);
+      }
+      
+      clearAISuggestionDecorations();
+      pendingAISuggestion = null;
+      
+      saveState();
+      broadcastFileUpdate(file);
+      
+      // Save to server
+      if (authToken && currentWorkspaceId) {
+        saveFileToServer(file);
+      }
+      
+      setRunOutputMessage('✓ AI changes applied to ' + file.name);
+      agentPanelSuggestions.textContent = 'Changes applied! Type a new prompt to continue.';
+    };
+    
     window.rejectAISuggestion = () => {
+      clearAISuggestionDecorations();
+      pendingAISuggestion = null;
       agentPanelSuggestions.textContent = 'Changes rejected. Type a new prompt.';
     };
 
