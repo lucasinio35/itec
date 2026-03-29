@@ -13,6 +13,15 @@
       "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
     }
   ],
-  "workspaces": [],
+  "workspaces": [
+    {
+      "id": "ws-1774748101295-3d8a3fe23baa28",
+      "name": "My Workspace",
+      "ownerId": "user-1774747142968-ed998365941838",
+      "members": [
+        "user-1774747142968-ed998365941838"
+      ]
+    }
+  ],
   "files": []
 }
