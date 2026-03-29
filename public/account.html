@@ -308,7 +308,7 @@
     </div>
 
     <script>
-      const token = localStorage.getItem('itecify-auth-token') || '';
+      const token = sessionStorage.getItem('itecify-auth-token') || '';
       const avatarButton = document.getElementById('avatarButton');
       const avatarInput = document.getElementById('avatarInput');
       const avatarImage = document.getElementById('avatarImage');
@@ -485,7 +485,7 @@
         button.className = 'project-btn';
         button.textContent = workspace.name;
         button.onclick = () => {
-          localStorage.setItem('itecify-workspace-id', workspace.id);
+          sessionStorage.setItem('itecify-workspace-id', workspace.id);
           flushTrackedTime();
           window.location.href = '/app.html';
         };

@@ -640,6 +640,7 @@
         <input id="fileUpload" type="file" class="hidden" />
         <button id="saveFileBtn">Save</button>
         <button id="downloadFileBtn">Download</button>
+        <button id="saveToPcBtn" title="Save As to PC for auto-syncing">Save to PC</button>
         <button id="runActiveBtn">Run Active</button>
         <button id="undoBtn">Undo</button>
         <button id="redoBtn">Redo</button>
@@ -743,10 +744,10 @@
     let isUndoRedo = false;
     let currentAgentId = null;
     let undoDebounceTimer = null;
-    let authToken = localStorage.getItem('itecify-auth-token') || '';
+    let authToken = sessionStorage.getItem('itecify-auth-token') || '';
     let currentUser = null;
     let workspaces = [];
-    let currentWorkspaceId = localStorage.getItem('itecify-workspace-id') || '';
+    let currentWorkspaceId = sessionStorage.getItem('itecify-workspace-id') || '';
     let monacoEditor = null;
     let monacoModel = null;
     let usingFallbackEditor = false;
@@ -754,6 +755,8 @@
     let htmlPreviewWindow = null;
     let errorLineDecorations = [];
     let syncRootHandle = null;
+    let fileHandles = {}; // { fileId -> FileSystemFileHandle }
+    let writeQueue = {};
     const TRACK_KEY = 'itecify-total-time-ms';
 
     // Collaborative cursor tracking
@@ -763,6 +766,7 @@
     const CURSOR_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
     let cursorColorIndex = 0;
     let visitStartedAt = Date.now();
+    const currentInstanceId = Math.random().toString(36).substring(2, 10);
 
     function flushTrackedTime() {
       const previous = Number(localStorage.getItem(TRACK_KEY) || '0');
@@ -809,6 +813,20 @@
     function setRunOutputMessage(message, isError = false) {
       runOutput.classList.toggle('error-output', !!isError);
       runOutput.textContent = message;
+    }
+
+    async function writeToFileHandle(fileId, handle, content) {
+      if (!handle) return;
+      if (writeQueue[fileId]) return;
+      writeQueue[fileId] = true;
+      try {
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+      } catch (err) {
+        console.warn('Failed to write to file handle:', err);
+      }
+      writeQueue[fileId] = false;
     }
 
     function clearEditorDiagnostics() {
@@ -924,6 +942,9 @@
                 if (authToken && currentWorkspaceId) {
                   saveFileToServer(file);
                 }
+                if (fileHandles[file.id]) {
+                  writeToFileHandle(file.id, fileHandles[file.id], file.code);
+                }
               }, 400); // 400ms debounce
             }
             saveState();
@@ -934,8 +955,12 @@
           monacoEditor.onDidChangeCursorPosition(() => updateCursor());
 
           monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+            const file = getActiveFile();
             flushCurrentFile();
             saveState();
+            if (file && fileHandles[file.id]) {
+              writeToFileHandle(file.id, fileHandles[file.id], file.code);
+            }
             setRunOutputMessage('Saved');
           });
 
@@ -961,6 +986,9 @@
           if (authToken && currentWorkspaceId) {
             saveFileToServer(file);
           }
+          if (fileHandles[file.id]) {
+            writeToFileHandle(file.id, fileHandles[file.id], file.code);
+          }
         }, 400);
         updateCursor();
       });
@@ -971,8 +999,12 @@
       fallbackEditorEl.addEventListener('keydown', (event) => {
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
           event.preventDefault();
+          const file = getActiveFile();
           flushCurrentFile();
           saveState();
+          if (file && fileHandles[file.id]) {
+            writeToFileHandle(file.id, fileHandles[file.id], file.code);
+          }
           setRunOutputMessage('Saved');
         }
       });
@@ -981,7 +1013,7 @@
 
     function loadCurrentUser() {
       try {
-        currentUser = JSON.parse(localStorage.getItem('itecify-current-user') || 'null');
+        currentUser = JSON.parse(sessionStorage.getItem('itecify-current-user') || 'null');
       } catch (err) {
         currentUser = null;
       }
@@ -1024,7 +1056,7 @@
         workspaceSelect.appendChild(option);
         workspaceSelect.value = '';
         currentWorkspaceId = '';
-        localStorage.removeItem('itecify-workspace-id');
+        sessionStorage.removeItem('itecify-workspace-id');
         return;
       }
 
@@ -1038,7 +1070,7 @@
       const validCurrent = workspaces.some((workspace) => workspace.id === currentWorkspaceId);
       currentWorkspaceId = validCurrent ? currentWorkspaceId : workspaces[0].id;
       workspaceSelect.value = currentWorkspaceId;
-      localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
+      sessionStorage.setItem('itecify-workspace-id', currentWorkspaceId);
     }
 
     async function refreshWorkspaces() {
@@ -1077,12 +1109,12 @@
         if (!res.ok) throw new Error('Session expired');
         const data = await res.json();
         currentUser = data.user || null;
-        localStorage.setItem('itecify-current-user', JSON.stringify(currentUser));
+        sessionStorage.setItem('itecify-current-user', JSON.stringify(currentUser));
       } catch (err) {
         authToken = '';
         currentUser = null;
-        localStorage.removeItem('itecify-auth-token');
-        localStorage.removeItem('itecify-current-user');
+        sessionStorage.removeItem('itecify-auth-token');
+        sessionStorage.removeItem('itecify-current-user');
         window.location.href = '/login.html';
       }
       updateAuthUI();
@@ -1261,9 +1293,9 @@
       workspaces = [];
       currentWorkspaceId = '';
       closeSyncWebSocket();
-      localStorage.removeItem('itecify-auth-token');
-      localStorage.removeItem('itecify-current-user');
-      localStorage.removeItem('itecify-workspace-id');
+      sessionStorage.removeItem('itecify-auth-token');
+      sessionStorage.removeItem('itecify-current-user');
+      sessionStorage.removeItem('itecify-workspace-id');
     }
 
     function initializeYjsProvider() { }
@@ -1666,6 +1698,7 @@
       const message = {
         type: 'cursor-update',
         userId: currentUser.id,
+        instanceId: currentInstanceId,
         username: currentUser.username,
         fileId: state.activeId,
         line: lineNumber || 1,
@@ -1680,13 +1713,14 @@
     }
 
     function updateRemoteCursor(data) {
-      if (data.userId === currentUser?.id) return; // Ignore own cursor
+      const senderId = data.instanceId || data.userId;
+      if (senderId === currentInstanceId || (!data.instanceId && data.userId === currentUser?.id)) return; // Ignore own cursor
       if (data.fileId !== state.activeId) return; // Only show cursors in current file
 
-      if (!remoteCursors[data.userId]) {
+      if (!remoteCursors[senderId]) {
         const color = CURSOR_COLORS[cursorColorIndex % CURSOR_COLORS.length];
-        const cssClass = 'remote-user-' + data.userId.replace(/[^a-zA-Z0-9]/g, '');
-        remoteCursors[data.userId] = {
+        const cssClass = 'remote-user-' + senderId.replace(/[^a-zA-Z0-9]/g, '');
+        remoteCursors[senderId] = {
           username: data.username,
           color: color,
           cssClass: cssClass
@@ -1701,12 +1735,12 @@
         }
       }
 
-      const cursor = remoteCursors[data.userId];
+      const cursor = remoteCursors[senderId];
       cursor.line = data.line;
       cursor.column = data.column;
       cursor.timestamp = Date.now();
 
-      renderRemoteCursor(data.userId);
+      renderRemoteCursor(senderId);
       updateCollaboratorsDisplay();
     }
 
@@ -1756,6 +1790,20 @@
       delete remoteCursors[userId];
       updateCollaboratorsDisplay();
     }
+
+    // Periodic updates to keep cursor alive and cleanup stale ones
+    setInterval(() => {
+      updateCursor();
+      const now = Date.now();
+      let changed = false;
+      Object.keys(remoteCursors).forEach(id => {
+        if (now - (remoteCursors[id].timestamp || 0) > 12000) {
+          removeRemoteCursor(id);
+          changed = true;
+        }
+      });
+      if (changed) updateCollaboratorsDisplay();
+    }, 4000);
 
     function updateCollaboratorsDisplay() {
       const multiCursorStatus = document.getElementById('multiCursorStatus');
@@ -2146,9 +2194,9 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       currentUser = null;
       workspaces = [];
       currentWorkspaceId = '';
-      localStorage.removeItem('itecify-auth-token');
-      localStorage.removeItem('itecify-current-user');
-      localStorage.removeItem('itecify-workspace-id');
+      sessionStorage.removeItem('itecify-auth-token');
+      sessionStorage.removeItem('itecify-current-user');
+      sessionStorage.removeItem('itecify-workspace-id');
       updateAuthUI();
       renderWorkspaceMenu();
       setRunOutputMessage('Logged out.');
@@ -2183,9 +2231,9 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       persistCurrentState();
       currentWorkspaceId = workspaceSelect.value;
       if (currentWorkspaceId) {
-        localStorage.setItem('itecify-workspace-id', currentWorkspaceId);
+        sessionStorage.setItem('itecify-workspace-id', currentWorkspaceId);
       } else {
-        localStorage.removeItem('itecify-workspace-id');
+        sessionStorage.removeItem('itecify-workspace-id');
       }
       loadWorkspaceState();
       setRunOutputMessage(currentWorkspaceId
@@ -2296,8 +2344,12 @@ If the user asks you to modify the code, respond with ONLY the complete modified
     document.getElementById('importFileBtn').onclick = () => fileUpload.click();
 
     document.getElementById('saveFileBtn').onclick = () => {
+      const file = getActiveFile();
       flushCurrentFile();
       saveState();
+      if (file && fileHandles[file.id]) {
+        writeToFileHandle(file.id, fileHandles[file.id], file.code);
+      }
       setRunOutputMessage('Saved');
     };
 
@@ -2316,6 +2368,29 @@ If the user asks you to modify the code, respond with ONLY the complete modified
       // Revoke the object URL to free memory
       setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
     };
+
+    const saveToPcBtn = document.getElementById('saveToPcBtn');
+    if (saveToPcBtn) {
+      saveToPcBtn.onclick = async () => {
+        const file = getActiveFile();
+        if (!file) {
+          setRunOutputMessage('No file selected.', true);
+          return;
+        }
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: file.name,
+          });
+          fileHandles[file.id] = handle;
+          await writeToFileHandle(file.id, handle, file.code);
+          setRunOutputMessage(`✓ File linked! Changes will now auto-save to PC as ${handle.name}.`);
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            setRunOutputMessage('Save to PC failed: ' + err.message, true);
+          }
+        }
+      };
+    }
 
     document.getElementById('runActiveBtn').onclick = runActive;
     document.getElementById('undoBtn').onclick = undo;

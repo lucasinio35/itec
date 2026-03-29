@@ -584,8 +584,8 @@
     }
 
     function persistAuth(data) {
-      localStorage.setItem('itecify-auth-token', data.token);
-      localStorage.setItem('itecify-current-user', JSON.stringify(data.user));
+      sessionStorage.setItem('itecify-auth-token', data.token);
+      sessionStorage.setItem('itecify-current-user', JSON.stringify(data.user));
     }
 
     async function readResponsePayload(res, emptyFallback) {
@@ -618,8 +618,8 @@
     }
 
     function updateHomepageActions() {
-      const hasToken = !!localStorage.getItem('itecify-auth-token');
-      const hasKnownUser = !!localStorage.getItem('itecify-current-user');
+      const hasToken = !!sessionStorage.getItem('itecify-auth-token');
+      const hasKnownUser = !!sessionStorage.getItem('itecify-current-user');
 
       accountBtn.onclick = () => {
         if (hasToken) {
