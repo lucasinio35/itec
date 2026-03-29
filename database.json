@@ -5,7 +5,14 @@
       "username": "testuser123",
       "email": "test123@example.com",
       "password": "fcf730b6d95236ecd3c9fc2d92d7b6b2bb061514961aec041d6c7a7192f592e4"
+    },
+    {
+      "id": "user-1774747142968-ed998365941838",
+      "username": "lucasinio35",
+      "email": "lucapelin91@gmail.com",
+      "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
     }
   ],
-  "workspaces": []
+  "workspaces": [],
+  "files": []
 }

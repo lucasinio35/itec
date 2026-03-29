@@ -100,31 +100,6 @@ function canAccessWorkspace(userId, workspaceId) {
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static('public'));
 
-function loadDatabase() {
-  try {
-    if (!fs.existsSync(DATABASE_FILE)) return;
-    const parsed = JSON.parse(fs.readFileSync(DATABASE_FILE, 'utf8'));
-    users.length = 0;
-    users.push(...(parsed.users || []));
-    workspaces.length = 0;
-    workspaces.push(...(parsed.workspaces || []));
-  } catch (err) {
-    console.warn('database load failed', err.message);
-  }
-}
-
-function saveDatabase() {
-  try {
-    fs.writeFileSync(DATABASE_FILE, JSON.stringify({ users, workspaces }, null, 2), 'utf8');
-  } catch (err) {
-    console.warn('database save failed', err.message);
-  }
-}
-
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
-
 function sanitizeUser(user) {
   return { id: user.id, username: user.username, email: user.email };
 }
@@ -137,61 +112,6 @@ function findUserByLogin(identifier) {
   );
 }
 
-function encodeBase64Url(value) {
-  return Buffer.from(value).toString('base64url');
-}
-
-function decodeBase64Url(value) {
-  return Buffer.from(value, 'base64url').toString('utf8');
-}
-
-function signTokenPayload(payload) {
-  return crypto
-    .createHmac('sha256', JWT_SECRET)
-    .update(payload)
-    .digest('base64url');
-}
-
-function generateToken(user) {
-  const payload = {
-    ...sanitizeUser(user),
-    exp: Date.now() + (2 * 60 * 60 * 1000)
-  };
-  const encoded = encodeBase64Url(JSON.stringify(payload));
-  return encoded + '.' + signTokenPayload(encoded);
-}
-
-function verifyToken(token) {
-  const [encoded, signature] = String(token || '').split('.');
-  if (!encoded || !signature) throw new Error('Malformed token');
-  const expected = signTokenPayload(encoded);
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
-    throw new Error('Invalid token signature');
-  }
-  const payload = JSON.parse(decodeBase64Url(encoded));
-  if (!payload.exp || Date.now() > payload.exp) {
-    throw new Error('Token expired');
-  }
-  return payload;
-}
-
-function authenticateJWT(req, res, next) {
-  const authHeader = req.headers.authorization || '';
-  if (!authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authorization header missing or invalid' });
-  }
-  try {
-    req.user = verifyToken(authHeader.slice(7));
-    next();
-  } catch (err) {
-    res.status(401).json({ error: 'Invalid or expired token' });
-  }
-}
-
-function canAccessWorkspace(userId, workspaceId) {
-  const workspace = workspaces.find((candidate) => candidate.id === workspaceId);
-  return Boolean(workspace && workspace.members.includes(userId));
-}
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'itecify-sandbox', port: PORT });
@@ -203,98 +123,15 @@ app.get('/api/auth/me', authenticateJWT, (req, res) => {
   res.json({ user: sanitizeUser(user) });
 });
 
-app.post('/api/auth/register', (req, res) => {
-  const username = String(req.body?.username || '').trim();
-  const email = String(req.body?.email || '').trim();
-  const password = String(req.body?.password || '');
-  if (!username || !email || !password) {
-    return res.status(400).json({ error: 'username, email and password are required' });
-  }
-  if (findUserByLogin(username) || users.some((user) => normalizeCredential(user.email) === normalizeCredential(email))) {
-    return res.status(409).json({ error: 'User already exists' });
-  }
 
-  const user = {
-    id: 'user-' + Date.now() + '-' + Math.random().toString(16).slice(2),
-    username,
-    email,
-    password: hashPassword(password)
-  };
-  users.push(user);
-  saveDatabase();
-  res.json({ message: 'Registered', token: generateToken(user), user: sanitizeUser(user) });
-});
-
-app.post('/api/auth/login', (req, res) => {
-  const username = String(req.body?.username || '').trim();
-  const password = String(req.body?.password || '');
-  if (!username || !password) {
-    return res.status(400).json({ error: 'username and password are required' });
-  }
-
-  const user = findUserByLogin(username);
-  if (!user || user.password !== hashPassword(password)) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-
-  res.json({ message: 'Logged in', token: generateToken(user), user: sanitizeUser(user) });
-});
 
 app.get('/api/workspaces', authenticateJWT, (req, res) => {
   const visible = workspaces.filter((workspace) => workspace.members.includes(req.user.id));
   res.json({ workspaces: visible });
 });
 
-app.post('/api/workspaces', authenticateJWT, (req, res) => {
-  const name = String(req.body?.name || '').trim();
-  if (!name) return res.status(400).json({ error: 'Workspace name is required' });
 
-  const workspace = {
-    id: 'ws-' + Date.now() + '-' + Math.random().toString(16).slice(2),
-    name,
-    ownerId: req.user.id,
-    members: [req.user.id]
-  };
-  workspaces.push(workspace);
-  saveDatabase();
-  res.json({ message: 'Workspace created', workspace });
-});
 
-app.post('/api/workspaces/:workspaceId/add-member', authenticateJWT, (req, res) => {
-  const workspace = workspaces.find((candidate) => candidate.id === req.params.workspaceId);
-  const identifier = String(req.body?.identifier || '').trim();
-
-  if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
-  if (workspace.ownerId !== req.user.id) {
-    return res.status(403).json({ error: 'Only the workspace owner can add members' });
-  }
-  if (!identifier) return res.status(400).json({ error: 'identifier is required' });
-
-  const userToAdd = users.find((candidate) => candidate.username === identifier || candidate.email === identifier);
-  if (!userToAdd) return res.status(404).json({ error: 'User not found' });
-
-  if (!workspace.members.includes(userToAdd.id)) {
-    workspace.members.push(userToAdd.id);
-    saveDatabase();
-  }
-
-  res.json({ message: 'Member added', workspace });
-});
-
-app.get('/api/workspaces/:workspaceId/members', authenticateJWT, (req, res) => {
-  const workspace = workspaces.find((candidate) => candidate.id === req.params.workspaceId);
-  if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
-  if (!canAccessWorkspace(req.user.id, workspace.id)) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-
-  const members = workspace.members
-    .map((memberId) => users.find((candidate) => candidate.id === memberId))
-    .filter(Boolean)
-    .map(sanitizeUser);
-
-  res.json({ members });
-});
 
 app.post('/api/ai', async (req, res) => {
   const prompt = req.body?.prompt || '';
@@ -436,10 +273,6 @@ app.get('/api/workspaces/:workspaceId', authenticateJWT, (req, res) => {
   res.json({ workspace });
 });
 
-app.get('/api/workspaces', authenticateJWT, (req, res) => {
-  const mine = workspaces.filter((w) => w.members.includes(req.user.id));
-  res.json({ workspaces: mine });
-});
 
 app.get('/api/workspaces/:workspaceId/members', authenticateJWT, (req, res) => {
   const workspace = workspaces.find((w) => w.id === req.params.workspaceId);
@@ -761,9 +594,9 @@ function sanitizeInput(code) {
 }
 
 app.post('/api/sandbox/run', authenticateJWT, async (req, res) => {
-  const { language, code, workspaceId } = req.body || {};
-  if (!language || !code || !workspaceId) return res.status(400).json({ error: 'language, code and workspaceId are required' });
-  if (!canAccessWorkspace(req.user.id, workspaceId)) {
+  const { language, code, workspaceId, input } = req.body || {};
+  if (!language || !code) return res.status(400).json({ error: 'language and code are required' });
+  if (workspaceId && !canAccessWorkspace(req.user.id, workspaceId)) {
     return res.status(403).json({ error: 'User not part of workspace' });
   }
   const clean = sanitizeInput(code);
